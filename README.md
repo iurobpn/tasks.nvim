@@ -3,20 +3,9 @@
 </p>
 
 <p align="center">
-    > A tasks managements plugin with taskwarrior and timewarrior integration.
+    A tasks managements plugin with taskwarrior and timewarrior integration.
 </p>
-
-<div align="center">
-    > Drag your video (<10MB) here to host it for free on GitHub.
-</div>
-
-<div align="center">
-
-> Videos don't work on GitHub mobile, so a GIF alternative can help users.
-
-_[GIF version of the showcase video for mobile users](SHOWCASE_GIF_LINK)_
-
-</div>
+<br>
 
 ## ⚡️ Features
 
