@@ -1,0 +1,46 @@
+==============================================================================
+------------------------------------------------------------------------------
+                                                       *tasks.toggle()*
+                           `tasks.toggle`()
+Toggle the plugin by calling the `enable`/`disable` methods respectively.
+
+------------------------------------------------------------------------------
+                                                       *tasks.enable()*
+                        `tasks.enable`({scope})
+Initializes the plugin, sets event listeners and internal state.
+
+------------------------------------------------------------------------------
+                                                      *tasks.disable()*
+                           `tasks.disable`()
+Disables the plugin, clear highlight groups and autocmds, closes side buffers and resets the internal state.
+
+
+==============================================================================
+------------------------------------------------------------------------------
+                                                        *tasks.options*
+                            `tasks.options`
+tasks configuration with its default values.
+
+Type ~
+`(table)`
+Default values:
+>lua
+  tasks.options = {
+      -- Prints useful logs about what event are triggered, and reasons actions are executed.
+      debug = false,
+  }
+
+<
+------------------------------------------------------------------------------
+                                                        *tasks.setup()*
+                       `tasks.setup`({options})
+Define your tasks setup.
+
+Parameters ~
+{options} `(table)` Module config table. See |tasks.options|.
+
+Usage ~
+`require("tasks").setup()` (add `{}` with your |tasks.options| table)
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
