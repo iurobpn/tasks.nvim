@@ -3,13 +3,13 @@ if _G.tasksLoaded then
     return
 end
 
-_G.tasskLoaded = true
+_G.tasksLoaded = true
 
 -- Useful if you want your plugin to be compatible with older (<0.7) neovim versions
 if vim.fn.has("nvim-0.7") == 0 then
-    vim.cmd("command! tasks lua require('tasks').toggle()")
+    vim.cmd("command! TasksInit lua require('tasks').toggle()")
 else
-    vim.api.nvim_create_user_command("tasks", function()
-        require("tasks").toggle()
+    vim.api.nvim_create_user_command("TasksInit", function()
+        require("Tasks").toggle()
     end, {})
 end
