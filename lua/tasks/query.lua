@@ -1,1 +1,1 @@
-return require('tasks.query_jq')
+return require('tasks.jq')

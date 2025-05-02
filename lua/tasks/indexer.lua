@@ -1,93 +1,28 @@
-require('class')
-
-local utils = require'utils'
-local Sql = require('dev.lua.sqlite').Sql
-local json = require('cjson')
-
-local parser = require('tasks.parser')
-
-local M = { 
-    filename = 'tasks.db',
-    filepath = '.tasks',
-    path = '/home/gagarin/git/pkm',
-    sql = nil,
+local M = {
+    filename = '',
+    file = 'tasks.json',
+    folder = '.tasks',
+    path = os.getenv('HOME') .. '/git/pkm',
+    backend = 'jq',
 }
-
-function M:create_table()
-    -- Connect to (or create) the SQLite database
-    -- Create a table to store the JSON data
-    local create_table_task = [[
-CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    filename TEXT,
-    line_number INTEGER,
-    status TEXT,
-    description TEXT
-);]]
-
-    local create_table_tags = [[
-CREATE TABLE IF NOT EXISTS tags (
-    task_id INTEGER,
-    tag TEXT,
-    FOREIGN KEY(task_id) REFERENCES tasks(id)
-);]]
-
-    local create_table_parameters = [[
-CREATE TABLE IF NOT EXISTS parameters (
-    task_id INTEGER,
-    name TEXT,
-    value TEXT,
-    FOREIGN KEY(task_id) REFERENCES tasks(id)
-);
-]]
-    self.sql:run(create_table_task)
-    self.sql:run(create_table_tags)
-    self.sql:run(create_table_parameters)
-end
-
-
--- Function to insert data into the SQLite database
-function M:insert(task)
-    local insert_task_sql = string.format([[
-        INSERT INTO tasks (filename, line_number, status, description)
-        VALUES ('%s', %d, '%s', '%s');
-    ]], task.filename, task.line_number, task.status, task.description)
-
-    if not self.sql.connected then
-        print('Not connected to the database')
-        return
-    end
-    self.sql:run(insert_task_sql)
-
-    -- Get the last inserted task_id
-    local task_id = self.sql:query("SELECT last_insert_rowid()")
-
-    -- Insert tags
-    for _, tag in ipairs(task.tags) do
-        local insert_tag_sql = string.format("INSERT INTO tags (task_id, tag) VALUES (%d, '%s');", task_id, tag)
-        self.sql:run(insert_tag_sql)
-    end
-
-    -- Insert parameters
-    for param_name, param_value in pairs(task) do
-        if param_name ~= "filename" and param_name ~= "line_number" and param_name ~= "status" and param_name ~= "description" and param_name ~= "tags" and (type(param_name) ~= 'function') then
-            local insert_param_sql = string.format("INSERT INTO parameters (task_id, name, value) VALUES (%d, '%s', '%s');", task_id, param_name, param_value)
-            self.sql:run(insert_param_sql)
-        end
-    end
-end
+M.filename = M.path .. '/' .. M.folder .. '/' .. M.file
 
 -- Example usage
 -- local output = get_command_output("fish -c 'echo Hello from Fish!'")
 -- read and parse tasks from the notes to a lua table
--- @param folder: folder with the notes
+-- @param folder str --folder with the notes
 -- @return: a table of tasks
 function M:read_notes(folder)
     if folder ~= nil and folder ~='' then
-        self.path = folder
+        folder = self.path
     end
-
-    local raw_tasks = utils.get_command_output("fish -c 'set -l DIR (git rev-parse --toplevel); $DIR/scripts/find_tasks.fish --dir=" .. self.path .. "'")
+    if self.path == nil or self.path == '' then
+        print('path is nil')
+        return
+    end
+    -- local source = debug.getinfo(1, "S").source
+    -- local source_dir = source:sub(2) .. '/../../scripts'
+    local raw_tasks = require"tasks.find".find_tasks(folder)
     local id_counter =  1
 
     if raw_tasks == nil then
@@ -95,13 +30,14 @@ function M:read_notes(folder)
         return
     end
 
-    raw_tasks  = utils.split(raw_tasks, '\n')
+    raw_tasks  = require"utils".split(raw_tasks, '\n')
     if raw_tasks == nil then
         print('splitted tasks are nil')
         return
     end
 
     local tasks = {}
+    local parser = require"tasks.parser"
     for _, line in ipairs(raw_tasks) do
         local task = parser.parse(line)
         if task == nil then
@@ -116,63 +52,104 @@ function M:read_notes(folder)
     return tasks
 end
 
-function M:to_json(tasks)
-    local json_tasks = json.encode(tasks)
-
-    local json_file = self.path .. '/' .. self.filepath .. '/tasks.json'
-    local fd = io.open( json_file, 'w')
-    if fd == nil then
-        print('Failed to open ' .. json_file)
-        return
-    end
-    fd:write(json_tasks)
-    fd:close()
-    print('Tasks indexing completed')
+function M:get_fullpath()
+    return self.path .. '/' .. self.folder .. '/' .. self.file
 end
 
-function M:to_sql(raw_tasks)
-    self.sql:set_path(self.path)
-    self.sql:connect()
-    self:create_table()
 
-    for _, line in ipairs(raw_tasks) do
-        local task = parser.parse(line)
-        if task == nil then
-            print('parser failed to parse the task')
-        else
-            self:insert(task)
-        end
-    end
-
-    self.sql:close()
+-- write to filçe db
+function M:write(tasks)
+    require('tasks.' .. self.backend).write(tasks, _G.tasks:get_filename())
 end
 
 local mod = {
     Indexer = M
 }
+-- get a indexer
+-- @return: a table of tasks
+function mod.get_indexer(folder, filename)
+    if filename == nil then
+        filename = mod.Indexer:get_fullpath()
+    end
+    if folder == nil then
+        folder = mod.Indexer.folder
+    end
+    return mod.Indexer(folder, filename)
+end
+---
+-- get a indexer
+-- @param folder str --folder with the notes
+-- @param filename str --filename of the notes
+function mod.index(folder,filename)
+    local indexer = mod.Indexer(folder, filename)
 
-Thread = require'thread'
-function mod.index()
+    if indexer == nil then
+        print('indexer object is nil')
+        return
+    end
+    local tasks = indexer:read_notes()
+    indexer:write(tasks)
+end
+function mod.index_process(folder, filename)
+    if folder == nil then
+        folder = mod.Indexer.folder
+    end
+    if filename == nil then
+        filename = mod.Indexer.filename
+    end
+    local res, err = pcall(os.execute,[[
+        lua -e '
+            local indexer = require("tasks").get_indexer("]] .. folder .. ',' .. filename .. [[")
+            local tasks = indexer:read_notes()
+            indexer:write(tasks)
+        '
+        ]])
+    if not res then
+        print('Error executing command: ' .. err)
+    else
+        print('Indexing output: ' .. tostring(res))
+    end
+end
+function mod.index_thread()
+    Thread = require'thread'
     print('Indexing tasks ...')
     local thread = Thread(
         function()
-            local indexer = require'tasks.indexer'.Indexer()
+            -- local Tasks = require'tasks'
+            require"class"
+            if Tasks == nil then
+                print('Tasks object is nil')
+                return
+            end
+            I=require"inspect"
+            print("Tasks: " .. I(Tasks))
+            local Indexer = Tasks.Indexer
+            print("Indexer: " .. I(Indexer))
+            local indexer = Indexer()
+            print("indexer: " .. I(indexer))
+            if indexer == nil then
+                print('indexer object is nil')
+                return
+            end
             local tasks = indexer:read_notes()
-            indexer:to_json(tasks)
+            indexer:write(tasks)
         end
     )
     thread:start()
     thread.running = false
 end
 
-M = class(M, {constructor = function(self, filename)
+require"class"
+M = _G.class(M, {constructor = function(self, folder, filename)
+    if folder ~= nil then
+        self.folder = folder
+    end
     if filename ~= nil then
         self.filename = filename
     end
-    self.sql = Sql(self.filename)
     return self
-end})
+end}
+)
 
 return mod
-
 

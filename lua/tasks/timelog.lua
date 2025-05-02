@@ -1,15 +1,12 @@
-
--- File: lua/tasklog.lua
-
 local M = {}
-
-
 ----------------------------
 M.edit = function()
     vim.cmd.e(M.log_file)
 end
 
-local tasks_log_file = vim.fn.expand("~/.config/nvim/tasks.log")
+if vim ~= nil and vim.fn ~= nil then
+    local tasks_log_file = vim.fn.expand("~/.config/nvim/tasks.log")
+end
 
 M.log_file = tasks_log_file
 -- Function to parse the log file and calculate summaries
@@ -248,6 +245,7 @@ local function summary_complete(arglead, cmdline, cursorpos)
     return {'day', 'month'}
 end
 
+if vim ~= nil and vim.api.nvim_create_user_command ~= nil then
 -- Register commands
 -- function M.setup()
 vim.api.nvim_create_user_command('Tasklog',
@@ -282,7 +280,10 @@ vim.api.nvim_create_user_command('Tasklog',
         nargs = '+',
         complete = task_complete,
     })
+end
 -- end
-vim.api.nvim_set_keymap('n', '<localleader>ts', '<cmd>Tasklog summary<CR>', {noremap = true, silent = true})
+if vim ~= nil and vim.api.nvim_set_keymap ~= nil then
+    vim.api.nvim_set_keymap('n', '<localleader>ts', '<cmd>Tasklog summary<CR>', {noremap = true, silent = true})
+end
 
 return M

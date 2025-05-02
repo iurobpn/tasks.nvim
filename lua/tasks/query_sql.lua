@@ -1,6 +1,4 @@
-local utils = require('utils')
 require('class')
-local sql = require('dev.lua.sqlite2')
 local M = {}
 
 local Query = {
@@ -13,6 +11,7 @@ Query = class(Query, {constructor = function(self, filename)
     if filename ~= nil then
         self.filename = filename
     end
+    local sql = require('dev.lua.sqlite2')
     self.sql = sql.Sql(self.path .. self.filename)
     return self
 end})
@@ -111,7 +110,7 @@ function Query:select(query)
         -- If this task_id is not already in the tasks table, initialize it
         if not tasks[task_id] then
             if rtask.filename == nil or rtask.id == nil or rtask.line_number == nil or rtask.status == nil then
-                utils.pprint(rtask)
+                require"utils".pprint(rtask)
                 error('task id: ' .. task_id .. ' is not valid')
             end
 
@@ -133,7 +132,7 @@ function Query:select(query)
         end
 
         -- Add the tag if it exists and is not already added
-        if rtask.tag ~= nil and not utils.contains(tasks_per_id[task_id].tags,rtask.tag) then
+        if rtask.tag ~= nil and not require"utils".contains(tasks_per_id[task_id].tags,rtask.tag) then
             table.insert(tasks_per_id[task_id].tags, rtask.tag)
         end
     end

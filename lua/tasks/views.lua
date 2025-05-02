@@ -1,22 +1,3 @@
-local fzf_lua = require('fzf-lua')
-local glyphs = require('git-icons')
-local lst = require('dev.lua.list')
-
-local nvim = {
-    utils = require('dev.nvim.utils')
-}
-
-local json = require('cjson')
-local ui = require('dev.nvim.ui')
-local float = ui.float
-local query = require('tasks.query')
-local utils = require('utils')
-local pv = require('dev.nvim.ui.fzf_previewer')
-local fs = require('dev.lua.fs')
--- local Buffer = require('dev.nvim.utils').Buffer
-
-require('class')
-
 local M = {
     map_file_line = {},
     default_query = [[jq '[ .[] | select((.status!="done") ]] ..
@@ -69,9 +50,9 @@ function M.open_context_window(filename, line_nr)
     local context_row = math.floor((vim.o.lines - context_height) / 4)
     local context_col = math.floor(vim.o.columns * 0.55)
 
-    local content = nvim.utils.get_context(filename, line_nr)
+    local content = dev.nvim.utils.get_context(filename, line_nr)
 
-    local win = nvim.ui.float.Window.flex()
+    local win = dev.nvim.ui.float.Window.flex()
     win:config(
         {
             -- relative = 'editor',
@@ -88,7 +69,7 @@ function M.open_context_window(filename, line_nr)
                     col = context_col,
                 },
             },
-            buffer = nvim.ui.views.get_scratch_opt(),
+            buffer = dev.nvim.ui.views.get_scratch_opt(),
             border = 'single',
             content = content,
             options = {
@@ -170,7 +151,7 @@ function M.to_lines(tasks)
         -- end
         table.insert(out, string.format('%s:%d:', file_qf.file, file_qf.line))
     end
-    vim.cmd('lcd ' .. query.Query.path)
+    vim.cmd('lcd ' ..require"tasks.query".Query.path)
 
     return out
 end
@@ -218,6 +199,7 @@ function M.format_timeline(tasks_in)
         vim.notify('tasks_in is nil', vim.log.levels.ERROR)
         return
     end
+    local glyphs = require('git-icons')
 
     local first = true
     local last_due = ''
@@ -280,7 +262,7 @@ function M.format_tasks(tasks_in)
 end
 
 function M.query_by_due()
-    local q = query.Query()
+    local q = require"tasks.query".Query()
     local tasks = q:select_by_tag_and_due()
     M.tasks = tasks
 
@@ -288,7 +270,7 @@ function M.query_by_due()
 end
 
 function M.query_by_tag_and_due(tag)
-    local q = query.Query()
+    local q = require"tasks.query".Query()
     local tasks = q:select_by_tag_and_due(tag)
     M.tasks = tasks
 
@@ -296,7 +278,7 @@ function M.query_by_tag_and_due(tag)
 end
 
 function M.query_by_tag(tag)
-    local q = query.Query()
+    local q = require"tasks.query".Query()
     local tasks = q:select_by_tag(tag)
     M.tasks = tasks
 
@@ -305,7 +287,7 @@ end
 
 function M.parse_entry(entry_str)
     -- Assume an arbitrary entry in the format of 'file:line'
-    local task_splited = utils.split(entry_str, ':')
+    local task_splited = require"utils".split(entry_str, ':')
     if task_splited == nil then
         error('task_splited is nil')
     end
@@ -356,7 +338,7 @@ function M.fzf_query(tasks, ...)
     local sink = opts.sink or function(selected)
         if selected then
             for _, task in ipairs(selected) do
-                local filename, line_nr = utils.get_file_line(task, ':')
+                local filename, line_nr = require"utils".get_file_line(task, ':')
                 if filename and line_nr then
                     vim.cmd.edit(filename)
                     vim.fn.cursor(line_nr, 1)
@@ -365,10 +347,10 @@ function M.fzf_query(tasks, ...)
         end
     end
 
-    fzf_lua.fzf_exec(tasks, {
-        previewer = pv.Previewer,
+    require"fzf-lua".fzf_exec(tasks, {
+        previewer = require('dev.nvim.ui.fzf_previewer').Previewer,
         prompt    = 'Tasks❯ ',
-        cwd       = query.Query.path,
+        cwd       = require"tasks.query".Query.path,
         fzf_opts  = {
             ["--no-sort"] = true,
         },
@@ -514,7 +496,7 @@ function M.populate_buffer(buf, tasks)
         if tasks.tags ~= nil then
             tags = table.concat(task.tags, ' ')
         end
-        local task_lines = task.description .. tags .. ' ' .. fs.basename(task.filename) .. ':' .. task.line_number
+        local task_lines = task.description .. tags .. ' ' .. require"dev.lua.fs".basename(task.filename) .. ':' .. task.line_number
 
         local task_file_line = { file = task.filename, line = task.line_number, due = task.due }
         for j = i, i + #task_lines - 1 do
@@ -578,10 +560,11 @@ function M.populate_buf_timeline(buf, tasks)
     i = i + 3
 
 
+    local glyphs = require('git-icons')
     local grp = grp_ontime
     for _, task in pairs(tasks) do
         if task.line_number == nil then
-            -- utils.pprint(task, 'Task (linenr is nil): ')
+            -- require"utils".pprint(task, 'Task (linenr is nil): ')
             error('task.line_number is nil')
         end
         if task.due ~= nil and last_due ~= task.due then
@@ -602,7 +585,7 @@ function M.populate_buf_timeline(buf, tasks)
             local date = os.date('%A, %d de %B de %Y', date_tbl)
             date = tostring(date)
             date = date:sub(1, 1):upper() .. date:sub(2)
-            local is_late = utils.is_before(task.due)
+            local is_late = require"utils".is_before(task.due)
 
             if is_late then
                 grp = grp_late
@@ -627,9 +610,9 @@ function M.populate_buf_timeline(buf, tasks)
         end
         if task.tags ~= nil then
             local tags = M.split_lines(table.concat(task.tags, ' '), ' ')
-            lst.extend(task_lines, tags)
+            require"list".extend(task_lines, tags)
         end
-        table.insert(task_lines, ' ' .. fs.basename(task.filename) .. ':' .. task.line_number)
+        table.insert(task_lines, ' ' .. require"dev.lua.fs".basename(task.filename) .. ':' .. task.line_number)
 
         local glyphss = { glyphs.circle }
         for _ = 2, #task_lines do
@@ -680,10 +663,10 @@ function M.split_lines(str, prefix)
     if n_lines > 1 then
         for j = 1, n_lines do
             local line = str:sub((j - 1) * width + 1, j * width)
-            table.insert(lines, prefix .. utils.trim(line))
+            table.insert(lines, prefix .. require"utils".trim(line))
         end
     else
-        lines = { prefix .. utils.trim(str) }
+        lines = { prefix .. require"utils".trim(str) }
     end
     if lines[#lines] == ' ' then
         table.remove(lines, #lines)
@@ -863,7 +846,7 @@ function M.open_current_tag(tag)
         vim.notify('No tag found')
         return
     end
-    local q = query.Query()
+    local q = require"tasks.query".Query()
     local opts = {
         tags = { tag },
         status = 'not done'
@@ -893,16 +876,16 @@ M.load_tasks = function()
     end
     M.json_tasks = fd:read('*a')
 
-    M.tasks = json.decode(M.json_tasks)
+    M.tasks = require"cjson".decode(M.json_tasks)
 end
 M.write_tasks = function(tasks, filename)
-    local json_file = query.Query.get_path('tasks') .. '/' .. filename
+    local json_file = require"tasks.query".Query.get_path('tasks') .. '/' .. filename
     local fd = io.open(json_file, 'w')
     if fd == nil then
         print('Failed to open ' .. json_file)
         return
     end
-    fd:write(json.encode(tasks))
+    fd:write(require"cjson".encode(tasks))
     fd:close()
 end
 
@@ -913,29 +896,29 @@ M.search = function(...)
     local tasks
 
     if opts.default then
-        local q = query.Query()
+        local q = require"tasks.query".Query()
         tasks = q:select(M.default_query)
         print('default search')
-        -- utils.pprint(tasks, 'tasks in search: ')
+        -- require"utils".pprint(tasks, 'tasks in search: ')
         -- M.write_tasks(tasks, 'tasks_from_query.json')
     elseif opts.search == 'last search' then
         if M.tasks == nil then
-            local q = query.Query()
+            local q = require"tasks.query".Query()
             tasks = q:select(M.default_query)
             M.tasks = tasks
         else
             tasks = M.tasks
         end
     elseif opts.search == 'personal' then
-        local q = query.Query()
+        local q = require"tasks.query".Query()
         tasks = q:select(M.personal_query)
         M.tasks = tasks
     elseif opts.search == 'work' then
-        local q = query.Query()
+        local q = require"tasks.query".Query()
         tasks = q:select(M.work_query)
         M.tasks = tasks
     else
-        local q = query.Query()
+        local q = require"tasks.query".Query()
         if opts.cmd == nil then
             tasks = q:select(opts)
         else
@@ -1030,7 +1013,7 @@ M.command = function(args)
             M.open_last_window()
             return
         elseif arg[1] == 'list' then
-            query.list.select()
+            require"tasks.query".list.select()
             return
         elseif subcommand == 'log' then
             vim.cmd('Tasklog ' .. args.args)
@@ -1047,23 +1030,29 @@ M.command = function(args)
         M.search(opts)
     end
 end
+if not (vim == nil) then
+    -- create_command
+    if not (vim.api.nvim_create_user_command == nil) then
+        vim.api.nvim_create_user_command('Tasks',
+            function(args)
+                M.command(args)
+            end,
+            { nargs = '*', complete = M.complete }
+        )
+    end
 
--- create_command
-vim.api.nvim_create_user_command('Tasks',
-    function(args)
-        M.command(args)
-    end,
-    { nargs = '*', complete = M.complete }
-)
-vim.api.nvim_set_keymap('n', '<F9>', ':Tasks toggle default<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>tw', ':Tasks toggle work<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>p', ':Tasks toggle personal<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>tc', ':Tasks current<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>tt', ':Tasks #today<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>tm', ':Tasks #main<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>ti', ':Tasks #important<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>tr', ':Tasks #res<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<LocalLeader>tl', ':Tasks last<CR>', { noremap = true, silent = true })
+    if not (vim.api.nvim_set_keymap == nil) then
+        vim.api.nvim_set_keymap('n', '<F9>', ':Tasks toggle default<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>tw', ':Tasks toggle work<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>p', ':Tasks toggle personal<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>tc', ':Tasks current<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>tt', ':Tasks #today<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>tm', ':Tasks #main<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>ti', ':Tasks #important<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>tr', ':Tasks #res<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<LocalLeader>tl', ':Tasks last<CR>', { noremap = true, silent = true })
+    end
+end
 function M.open_window_by_tag(tag)
     local tasks_qf = M.query_by_tag(tag)
     float.qset(tasks_qf)

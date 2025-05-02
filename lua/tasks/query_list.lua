@@ -1,5 +1,3 @@
-local utils = require'utils'
-
 local M = {
     list = {
         {
@@ -8,7 +6,6 @@ local M = {
         },
     },
 }
-
 
 function M.init()
 
@@ -36,7 +33,7 @@ function M.init()
             
         },
     }
-    local Msaved = vim.g.proj.get('query_list')
+    local Msaved = _G.proj.get('query_list')
     if Msaved then
         M.list = Msaved
     else
@@ -71,7 +68,7 @@ function M.select()
         prompt = 'Select a query>',
         actions = {
             ["default"] = function(selected)
-                local sel = utils.split(selected[1], '│')
+                local sel = require"utils".split(selected[1], '│')
                 local id = tonumber(sel[1])
                 local query = M.list[id]
                 if query == nil then
@@ -85,7 +82,7 @@ function M.select()
                 end
                 local q = string.format(query.query, unpack(inputs))
                 vim.notify(string.format('Query: %s', q))
-                dev.lua.tasks.views.search(q)
+                require'tasks.views'.search(q)
             end
         }
     })
@@ -94,6 +91,6 @@ M.save = function()
     vim.g.proj.save()
 end
 
-M.init()
+-- M.init()
 
 return M

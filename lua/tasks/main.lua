@@ -1,6 +1,3 @@
-local log = require("tasks.util.log")
-local state = require("tasks.state")
-
 -- internal methods
 local main = {}
 
@@ -9,6 +6,8 @@ local main = {}
 ---@param scope string: internal identifier for logging purposes.
 ---@private
 function main.toggle(scope)
+    local state = require("tasks.state")
+    local log = require("tasks.util.log")
     if state.get_enabled(state) then
         log.debug(scope, "tasks is now disabled!")
 
@@ -25,6 +24,8 @@ end
 --- @param scope string: internal identifier for logging purposes.
 ---@private
 function main.enable(scope)
+    local state = require("tasks.state")
+    local log = require("tasks.util.log")
     if state.get_enabled(state) then
         log.debug(scope, "tasks is already enabled")
 
@@ -42,6 +43,8 @@ end
 --- @param scope string: internal identifier for logging purposes.
 ---@private
 function main.disable(scope)
+    local state = require("tasks.state")
+    local log = require("tasks.util.log")
     if not state.get_enabled(state) then
         log.debug(scope, "tasks is already disabled")
 

@@ -1,6 +1,5 @@
 local M = {}
 
-local fzf = require('fzf-lua')
 
 -- Function to format the tasks into a string
 function M.format_task(task)
@@ -54,6 +53,7 @@ function M.search_tasks(task_list, f_sink)
         end
     end
 
+    local fzf = require('fzf-lua')
     fzf.run({
         source = task_lines,
         sink = f_sink,
@@ -122,6 +122,7 @@ function M.initial_search()
         table.insert(task_lines, M.format_task(task))
     end
 
+    local fzf = require('fzf-lua')
     -- Perform the fzf search
     fzf.fzf_exec(task_lines, {
         prompt = 'Search Tasks> ',
@@ -145,8 +146,9 @@ end
 
 -- Function to perform a refined search on selected tasks
 function M.refined_search(selected_tasks)
+    local fzf = require('fzf-lua')
     -- Perform another fzf search on the selected tasks
-    fzf_lua.fzf_exec(selected_tasks, {
+    fzf.fzf_exec(selected_tasks, {
         prompt = 'Refined Search> ',
         multi = true,  -- Allow further multiple selections if needed
         actions = {

@@ -10,7 +10,6 @@ local M = {
         metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'} -- a specific metatag
     }
 }
-local json = require("dkjson") -- Assumes you have dkjson installed for JSON serialization
 
 -- Parse a task string into a table
 function M.find_metatags(task)
@@ -87,7 +86,7 @@ function M.run()
     for line in io.lines() do
         -- Extract filename and line number
         local parsed_task = M.parse_task(line)
-        local json_output = json.encode(parsed_task, { indent = true, level = 4 })  -- Pretty print with 4 spaces
+        local json_output = require"cjson".encode(parsed_task, { indent = true, level = 4 })  -- Pretty print with 4 spaces
     end
 end
 

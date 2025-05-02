@@ -1,6 +1,4 @@
 local class = require('class')
-local fs = require('fs')
-local tbl = require('dev.lua.tbl')
 -- local json = require('dkjson')
 
 local M = {
@@ -59,7 +57,7 @@ M.Work = {
 Work = class(Work)
 
 M.init = function()
-    if not fs.file_exists(M.path .. '/' .. M.filename) then
+    if not require"fs".file_exists(M.path .. '/' .. M.filename) then
         local file = io.open(M.path .. '/' .. M.filename, 'w')
         file:write('{}')
         file:close()
@@ -92,6 +90,7 @@ end
 
 M.save = function()
     local file = io.open(M.path .. '/' .. M.filename, 'w')
+    local tbl = require('dev.lua.tbl')
     file:write(tbl.to_json(M.to_json()))
     file:close()
 end

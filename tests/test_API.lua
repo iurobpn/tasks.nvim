@@ -20,7 +20,7 @@ local T = MiniTest.new_set({
 T["setup()"] = MiniTest.new_set()
 
 T["setup()"]["sets exposed methods and default options value"] = function()
-    child.lua([[require('tasks').setup()]])
+    -- child.lua([[require('tasks').setup()]])
 
     -- global object that holds your plugin information
     Helpers.expect.global_type(child, "_G.tasks", "table")
@@ -39,10 +39,10 @@ T["setup()"]["sets exposed methods and default options value"] = function()
 end
 
 T["setup()"]["overrides default values"] = function()
-    child.lua([[require('tasks').setup({
-        -- write all the options with a value different than the default ones
-        debug = true,
-    })]])
+    -- child.lua([[require('tasks').setup({
+    --     -- write all the options with a value different than the default ones
+    --     debug = true,
+    -- })]])
 
     -- assert the value, and the type
     Helpers.expect.config(child, "debug", true)

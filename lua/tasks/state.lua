@@ -1,4 +1,3 @@
-local log = require("tasks.util.log")
 
 local state = { enabled = false }
 
@@ -13,6 +12,7 @@ end
 ---
 ---@private
 function state:save()
+    local log = require("tasks.util.log")
     log.debug("state.save", "saving state globally to _G.tasks.state")
 
     _G.tasks.state = self

@@ -1,39 +1,81 @@
-local json = require('cjson')
-
+local Workspace = require 'tasks.ws'
 local M = {
-    query = require('tasks.query'),
-    parser = require('tasks.parser'),
-    Indexer = require('tasks.indexer').Indexer,
-    fzf = require('tasks.fzf'),
-    views = require('tasks.views'),
-    timelog = require('tasks.timelog'),
-}
+    folder = os.getenv("HOME") .. '/git/my/home/pkm/',
+    current_ws='pkm',
+    ws = {},
+    indexer = require'tasks.indexer',
+    parser = require'tasks.parser',
+    views = require'tasks.views',
+    find = require'tasks.find',
+    workspace = require'tasks.ws',
+    fzf = require'tasks.fzf',
 
-local tasks = {
-    json = nil,
-    tab = nil,
-    ns_id = nil,
-    jq_line = nil,
-    inserted_lines = nil
-}
 
-local jq_fix = {
-    ns_id = nil,
-    vid = nil,  -- Variable to store the floating window ID,
-    bufnr = nil,   -- Variable to store the buffer number for the floating window,
-    line = nil,          -- Variable to store the line number with the jq command,
+    backend = 'jq',
+    query = require('tasks.jq'),
+    -- Indexer = require('tasks.indexer').Indexer,
+    tasks = {
+        json = nil,
+        tab = nil,
+        ns_id = nil,
+        jq_line = nil,
+        inserted_lines = nil
+    },
+    jq_fix = {
+        ns_id = nil,
+        vid = nil,  -- Variable to store the floating window ID,
+        bufnr = nil,   -- Variable to store the buffer number for the floating window,
+        line = nil,          -- Variable to store the line number with the jq command,
+    },
+    jq = {
+        ns_id = nil,
+        vid = nil,  -- Variable to store the floating window ID,
+        bufnr = nil,   -- Variable to store the buffer number for the floating window,
+        line = nil,          -- Variable to store the line number with the jq command,
+    },
 }
+M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
+-- M.query = require('tasks.' .. M.backend)
 
-local jq = {
-    ns_id = nil,
-    vid = nil,  -- Variable to store the floating window ID,
-    bufnr = nil,   -- Variable to store the buffer number for the floating window,
-    line = nil,          -- Variable to store the line number with the jq command,
-}
+--- Toggle the plugin by calling the `enable`/`disable` methods respectively.
+function M.toggle()
+    local main = require("tasks.main")
+    local config = require("tasks.config")
+    if M.config == nil then
+        M.config = config.options
+    end
 
-M.tasks = tasks
-M.jq = jq
-M.jq_fix = jq_fix
+    main.toggle("public_api_toggle")
+end
+
+--- Initializes the plugin, sets event listeners and internal state.
+function M.enable(scope)
+    local main = require("tasks.main")
+    local config = require("tasks.config")
+    if M.config == nil then
+        M.config = config.options
+    end
+
+    main.toggle(scope or "public_api_enable")
+end
+
+--- Disables the plugin, clear highlight groups and autocmds, closes side buffers and resets the internal state.
+function M.disable()
+    local main = require("tasks.main")
+    main.toggle("public_api_disable")
+end
+
+-- setup tasks options and merge them with user provided ones.
+function M.setup(opts)
+    local config = require("tasks.config")
+    M.config = config.setup(opts)
+end
+
+
+function M:add_workspace(name, folder)
+    self.ws[name] = Workspace(name, folder)
+end
+
 
 -- make recurrent tasks done and add completion date
 function M.recurrent_done()
@@ -109,7 +151,7 @@ function M.get_cmd_from_line(linenr)
     local line = vim.fn.getline(linenr)
     local cmd = line:match('%{%{%s*jq.?: (.*)%}%}')
     if not cmd then
-        return nil
+        return ''
     end
     cmd = 'jq ' .. cmd
     return cmd
@@ -242,13 +284,13 @@ function M.UpdateJqFloat()
         -- Extract the command from the line starting from 'jq'
         local cmd_start_col = line_content:find(jsonfile.prefix) + 5
         -- If we are on the jq line and haven't already shown the float
-        if jq.line ~= current_line then
+        if M.jq.line ~= current_line then
             -- Close previous floating window if any
             M.CloseJqFloat()
 
-            local old_line = jq.line
+            local old_line = M.jq.line
             -- Update jq.line
-            jq.line = current_line
+            M.jq.line = current_line
 
 
             -- Extract the command from the line (adjust as needed)
@@ -256,7 +298,7 @@ function M.UpdateJqFloat()
             if lines == nil or lines == '' then
                 return
             end
-            local taskss = json.decode(lines)
+            local taskss = require"cjson".decode(lines)
             local tasks_str = {}
 
             if lines ~= nil then
@@ -264,16 +306,16 @@ function M.UpdateJqFloat()
                     table.insert(tasks_str,M.tostring(task))
                 end
                 -- Create a new buffer for the floating window
-                jq.bufnr = vim.api.nvim_create_buf(false, true)  -- Create a scratch buffer
+               M.jq.bufnr = vim.api.nvim_create_buf(false, true)  -- Create a scratch buffer
 
                 -- Set buffer options
-                vim.api.nvim_set_option_value('bufhidden', 'wipe', {buf = jq.bufnr})
+                vim.api.nvim_set_option_value('bufhidden', 'wipe', {buf = M.jq.bufnr})
 
                 -- Set the lines of the buffer to the output
-                vim.api.nvim_buf_set_lines(jq.bufnr, 0, -1, false, tasks_str)
+                vim.api.nvim_buf_set_lines(M.jq.bufnr, 0, -1, false, tasks_str)
 
                 -- Optionally set syntax highlighting if the output is JSON
-                vim.api.nvim_set_option_value('filetype', 'markdown', {buf = jq.bufnr})
+                vim.api.nvim_set_option_value('filetype', 'markdown', {buf = M.jq.bufnr})
                 -- Calculate the maximum line length from the output
                 local max_line_length = 0
                 for _, line in ipairs(tasks_str) do
@@ -330,19 +372,20 @@ function M.UpdateJqFloat()
                 if old_line ~= nil then
                     vim.api.nvim_buf_add_highlight(bufnr, ns_l_id, 'FadeJqLine', old_line-1, 0, -1)
                 end
+
                 -- Open the floating window
-                jq.vid = vim.api.nvim_open_win(jq.bufnr, false, opts)
+                M.jq.vid = vim.api.nvim_open_win(M.jq.bufnr, false, opts)
 
                 -- Set window options to remove line numbers, signcolumn, etc.
-                vim.api.nvim_set_option_value('number', false, { scope = "local", win = jq.vid })
-                vim.api.nvim_set_option_value('relativenumber', false, { scope = "local", win = jq.vid })
-                vim.api.nvim_set_option_value('signcolumn', 'no', { scope = "local", win = jq.vid })
-                vim.api.nvim_set_option_value('foldcolumn', '0', { scope = "local", win = jq.vid })
-                vim.api.nvim_set_option_value('cursorline', false, { scope = "local", win = jq.vid })
-                vim.api.nvim_set_option_value('winhl', 'NormalFloat:Normal', { scope = "local", win = jq.vid })
-                vim.api.nvim_set_option_value('wrap', false, { scope = "local", win = jq.vid })
+                vim.api.nvim_set_option_value('number', false, { scope = "local", win = M.jq.vid })
+                vim.api.nvim_set_option_value('relativenumber', false, { scope = "local", win = M.jq.vid })
+                vim.api.nvim_set_option_value('signcolumn', 'no', { scope = "local", win = M.jq.vid })
+                vim.api.nvim_set_option_value('foldcolumn', '0', { scope = "local", win = M.jq.vid })
+                vim.api.nvim_set_option_value('cursorline', false, { scope = "local", win = M.jq.vid })
+                vim.api.nvim_set_option_value('winhl', 'NormalFloat:Normal', { scope = "local", win = M.jq.vid })
+                vim.api.nvim_set_option_value('wrap', false, { scope = "local", win = M.jq.vid })
                 -- call matchadd to set the highlight group for the line number for the jq window
-                vim.fn.matchadd('LineNr', "| .*$", 1, -1, { window = jq.vid})
+                vim.fn.matchadd('LineNr', "| .*$", 1, -1, { window = M.jq.vid})
             else
                 -- Handle error (optional)
                 print("Error executing command: " .. line_content)
@@ -392,43 +435,18 @@ function M.insert_completed_tag()
 end
 
 function M.CloseJqFloat()
-    if jq.vid and vim.api.nvim_win_is_valid(jq.vid) then
-        vim.api.nvim_win_close(jq.vid, true)
-        jq.vid = nil
-        jq.bufnr = nil
-        jq.line = nil
+    if M.jq.vid and vim.api.nvim_win_is_valid(M.jq.vid) then
+        vim.api.nvim_win_close(M.jq.vid, true)
+        M.jq.vid = nil
+        M.jq.bufnr = nil
+        M.jq.line = nil
     end
 end
 
+if vim ~= nil and vim.api.nvim_create_user_command ~= nil then
 -- Create the :JqFix command
-vim.api.nvim_create_user_command('JqCurrent', M.run_jq_cmd_from_current_line, {})
--- Set up autocommands
-vim.cmd([[
-  augroup JqFloatAutocmd
-    autocmd!
-    autocmd CursorMoved *.md lua require'tasks'.UpdateJqFloat()
-    autocmd BufLeave *md lua require'tasks'.CloseJqFloat()
-  augroup END
-]])
+    vim.api.nvim_create_user_command('JqCurrent', M.run_jq_cmd_from_current_line, {})
 
--- Or map to a keybinding (e.g., pressing <leader>jr runs the function)
-vim.api.nvim_set_keymap('n', '<LocalLeader>j', ':JqCurrent<CR>', { noremap = true, silent = true })
-
--- Add a command to run index function
-vim.api.nvim_create_user_command('TasksIndex', 'lua require"indexer".index()',
-    {
-        nargs = 0,
-        desc = 'Index note tasks  and save into json file'
-    }
-)
-
--- Define the autocommand to trigger on saving a markdown file
--- vim.api.nvim_create_autocmd("BufWritePost", {
---     pattern = "*.md",     -- Only apply to markdown files
---     callback = function()
---         vim.cmd("TasksIndex")  -- Execute the 'TasksIndex' command
---     end,
--- })
 
 -- Helper function to get today's date in "YYYY-MM-DD" format
 local function get_current_date()
@@ -454,43 +472,74 @@ local function run_tasks_index_once_per_day()
 end
 
 -- Autocommand to run on VimEnter
-vim.api.nvim_create_autocmd("VimEnter", {
-    callback = function()
-        run_tasks_index_once_per_day()
-    end,
+if vim ~= nil and vim.api.nvim_set_keymap ~= nil then
+    vim.api.nvim_create_autocmd("VimEnter", {
+        callback = function()
+            run_tasks_index_once_per_day()
+        end,
+    })
+end
+
+require"class"
+M = class(M, { constructor = function(self, folder, filename)
+    self:set_workspace(folder, filename)
+end
 })
 
-local main = require("tasks.main")
-local config = require("tasks.config")
+function M.get_indexer(folder,filename)
+    return require('tasks.indexer').get_indexer(folder, filename)
+end
+_G.tasks = M
 
---- Toggle the plugin by calling the `enable`/`disable` methods respectively.
-function M.toggle()
-    if _G.Tasks.config == nil then
-        _G.Tasks.config = config.options
+_G.tasks.index = function()
+    local indexer = _G.tasks.indexer
+    local ws = _G.tasks.ws[_G.tasks.current_ws]
+    if ws == nil then
+        print('No workspace found')
+        return
     end
-
-    main.toggle("public_api_toggle")
-end
-
---- Initializes the plugin, sets event listeners and internal state.
-function M.enable(scope)
-    if _G.Tasks.config == nil then
-        _G.Tasks.config = config.options
+    if ws.folder == nil then
+        print('No folder found')
+        return
     end
-
-    main.toggle(scope or "public_api_enable")
+    indexer.index(ws.folder)
+end
+_G.tasks.get_filename = function()
+    local ws = _G.tasks.ws[_G.tasks.current_ws]
+    if ws == nil then
+        print('No workspace found')
+        return
+    end
+    if ws.folder == nil then
+        print('No folder found')
+        return
+    end
+    return ws:get_filename()
 end
 
---- Disables the plugin, clear highlight groups and autocmds, closes side buffers and resets the internal state.
-function M.disable()
-    main.toggle("public_api_disable")
+-- Or map to a keybinding (e.g., pressing <leader>jr runs the function)
+vim.api.nvim_set_keymap('n', '<LocalLeader>j', ':JqCurrent<CR>', { noremap = true, silent = true })
+-- Add a command to run index function
+vim.api.nvim_create_user_command('TasksIndex', 'lua _G.tasks.index()',
+    {
+        nargs = 0,
+        desc = 'Index note tasks  and save into json file'
+    }
+)
 end
-
--- setup tasks options and merge them with user provided ones.
-function M.setup(opts)
-    _G.Tasks.config = config.setup(opts)
-end
-
-_G.Tasks = M
-
-return _G.Tasks
+-- Define the autocommand to trigger on saving a markdown file
+-- vim.api.nvim_create_autocmd("BufWritePost", {
+--     pattern = "*.md",     -- Only apply to markdown files
+--     callback = function()
+--         vim.cmd("TasksIndex")  -- Execute the 'TasksIndex' command
+--     end,
+-- })
+-- Set up autocommands
+-- vim.cmd([[
+--   augroup JqFloatAutocmd
+--     autocmd!
+--     autocmd CursorMoved *.md lua require'tasks'.UpdateJqFloat()
+--     autocmd BufLeave *md lua require'tasks'.CloseJqFloat()
+--   augroup END
+-- ]])
+return _G.tasks
