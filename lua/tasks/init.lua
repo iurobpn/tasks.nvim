@@ -13,6 +13,7 @@ local M = {
 
     backend = 'jq',
     query = require('tasks.jq'),
+
     -- Indexer = require('tasks.indexer').Indexer,
     tasks = {
         json = nil,
@@ -34,6 +35,17 @@ local M = {
         line = nil,          -- Variable to store the line number with the jq command,
     },
 }
+
+
+local nonmtags = {
+    'description',
+    'status',
+    'due',
+    'tags',
+    'filename',
+    'line_number',
+}
+
 M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
 -- M.query = require('tasks.' .. M.backend)
 
@@ -202,8 +214,9 @@ end
 ---@return string
 function M.toshortstring(task)
     local mtags = ''
-    if task.metatags then
-        for k,v in pairs(task.metatags) do
+    utils = require'utils'
+    for k,v in pairs(task) do
+        if not utils.contains(nonmtags,k) then
             mtags = mtags .. string.format('[%s:: %s]', k, v)
         end
     end
@@ -228,18 +241,21 @@ function M.tostring(task)
         status = 'x'
     end
 
-    local mtags = ''
-    if task.metatags then
-        for k,v in pairs(task.metatags) do
-            mtags = mtags .. string.format('[%s:: %s]', k, v)
-        end
-    end
     local due = ''
     if task.due ~= nil then
         due = string.format('[%s:: %s]', 'due', task.due)
     end
     local tags = table.concat(task.tags,' ')
     local file = '| ' .. task.filename .. ':' .. task.line_number
+
+    local mtags = ''
+    if task then
+        for k,v in pairs(task) do
+            if not utils.contains(nonmtags,k) then
+                mtags = mtags .. string.format(' [%s:: %s]', k, v)
+            end
+        end
+    end
     local line = string.format('- [%s] %s %s %s %s %s', status, task.description, tags, due, mtags, file)
     return line
 end

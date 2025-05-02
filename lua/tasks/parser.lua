@@ -71,10 +71,10 @@ function M.parse(task)
         status = status,
         description = description:match('^%s*(.*)%s*$'),
         tags = tags,
-        due = parameters.due,
-        metatags = parameters
     }
-    parameters.due = nil
+    for k, v in pairs(parameters) do
+        task_t[k] = v
+    end
 
     return task_t
 end
