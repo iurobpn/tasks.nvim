@@ -1,4 +1,4 @@
-local fname = 'tasks.json'
+TaskWarrior = require'task.TaskWarrior'
 
 local data = {
     uuid = nil,
@@ -43,25 +43,35 @@ function Task:save()
     if self.dirty == 0 then
         return
     end
-    require'TaskWarrior'.save_task(task)
-end
-
---- commands - make use of taskwarrior backend
----
--- update task with taskwarrior data
-function Task:update()
+    save_task(task)
 end
 
 function Task:start()
+    TaskWarrior.start_task(self)
 end
 function Task:stop()
+    TaskWarrior.stop_task(self)
 end
 function Task:done()
+    TaskWarrior.done_task(self)
 end
-function Task:add_annotation()
+function Task:add_annotation(annotation)
+    if not annotation then
+        return
+    end
+    TaskWarrior.add_annotation(self, annotation)
 end
-function Task:remove_annotation()
+function Task:remove_annotation(annotation)
+    if not annotation then
+        return
+    end
+    TaskWarrior.remove_annotation(self, annotation)
 end
+
+function Task:delete()
+    TaskWarrior.delete_task(self)
+end
+
 
 
 return Task

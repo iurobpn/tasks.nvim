@@ -1,7 +1,17 @@
 -- A taskwarrior backend module
 
-local TaskWarrior = {
+-- TESTING
+-- taskrc: TASKRC='/home/user/.taskrc', to make use of another taskrc
+-- task rc:/home/user/.taskrc, to make use of another taskrc
+-- TASKDATA=/tmp/.task/ task ...
 
+-- @brief taskwarrior backend
+-- @details
+-- - this module is used to interact with taskwarrior
+-- - it uses the task command line interface to run commands
+-- - it uses the cjson library to encode/decode json data
+-- - it uses the util module to run commands and read files
+local TaskWarrior = {
 }
 
 --- @brief Import a taskwarrior json file
@@ -16,7 +26,7 @@ end
 --- @param task string
 --- @return table uuids
 function TaskWarrior.import(task)
-    local uuids =  require'util'.run("echo '" .. task "' | task import ")
+    local uuids =  require'util'.run("echo '" .. task .. "' | task import ")
     return TaskWarrior.get_uuids(uuids) -- uuids are strings
 end
 
@@ -45,49 +55,75 @@ function TaskWarrior.save_task(task)
     return uuids[1] or ''
 end
 
-
--- @abc.abstractmethod
+--- @brief Import a taskwarrior json string
+--- @param task table
+--- @return string
 function TaskWarrior.delete_task(task)
+    return TaskWarrior.run_cmd('delete', task.data.uuid)
 end
 
-
--- @abc.abstractmethod
+--- @brief start a task
+--- @param task table
 function TaskWarrior.start_task(task)
+    return TaskWarrior.run_cmd('start', task.data.uuid)
+end
+
+--- @brief Run a command on the task
+--- @param cmd string
+--- @param uuid string
+--- @param ... string
+--- @return string output
+function TaskWarrior.run_cmd(cmd, uuid, ...)
+    local args = ... or ''
+    cmd = "task " .. uuid .. " " .. cmd .. " " .. args
+    local out = require'util'.run(cmd)
+    return out
 end
 
 
--- @abc.abstractmethod
+--- @brief stop a task
+--- @param task table
 function TaskWarrior.stop_task(task)
+    return TaskWarrior.run_cmd('stop', task.data.uuid)
 end
 
 
--- @abc.abstractmethod
+--- @brief mark a task as done
+--- @param task table
 function TaskWarrior.complete_task(task)
+    return TaskWarrior.run_cmd('done', task.data.uuid)
 end
 
 
--- @abc.abstractmethod
-function TaskWarrior.refresh_task(task, after_save)
-    -- Refreshes the given task. Returns new data dict with serialized attributes.
-    --after_save=False)
-end
-
--- @abc.abstractmethod
+--- @brief add an annotation to a task
+--- @param task table
+--- @param annotation string
+--- @return string
 function TaskWarrior.annotate_task(task, annotation)
+    return TaskWarrior.run_cmd('annotate', task.data.uuid,annotation)
 end
 
 
--- @abc.abstractmethod
+--- @brief remove an annotation from a task
+--- @param task table
+--- @param annotation string
+--- @return string
 function TaskWarrior.denotate_task(task, annotation)
+    return TaskWarrior.run_cmd('denotate', task.data.uuid, annotation)
 end
 
 
--- @abc.abstractmethod
+--- @brief sync the taskwarrior database with the server
+--- @param tasks table
+--- @return string
 function TaskWarrior.sync(tasks)
     -- Syncs the backend database with the taskd server
 end
 
 
+--- @brief convert a datetime string to a localized datetime object
+--- @param value string
+--- @return table
 function TaskWarrior.convert_datetime_string(value)
     --[[
     Converts TaskWarrior. syntax datetime string to a localized datetime
@@ -95,15 +131,4 @@ function TaskWarrior.convert_datetime_string(value)
     --]]
 end
 
--- local fname = 'tasks.json'
-local fname = 'out.txt'
--- local fd = io.popen("task import " .. fname)
-local util = require'util'
-local out = util.read(fname)
-print(out)
-out = TaskWarrior:get_uuids(out)
-print('out: ')
-print(require'inspect'.inspect(out))
-
-_G.TaskWarrior = TaskWarrior
 return TaskWarrior
