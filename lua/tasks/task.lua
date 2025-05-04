@@ -1,4 +1,4 @@
-TaskWarrior = require'task.TaskWarrior'
+TaskWarrior = require'tasks.TaskWarrior'
 
 local data = {
     uuid = nil,

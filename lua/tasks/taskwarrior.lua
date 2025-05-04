@@ -12,6 +12,7 @@
 -- - it uses the cjson library to encode/decode json data
 -- - it uses the util module to run commands and read files
 local TaskWarrior = {
+    _context = 'none',
 }
 
 --- @brief Import a taskwarrior json file
@@ -112,6 +113,18 @@ function TaskWarrior.denotate_task(task, annotation)
     return TaskWarrior.run_cmd('denotate', task.data.uuid, annotation)
 end
 
+-- @brief set or get the current context
+-- @param context string
+-- @return string cmd output
+function TaskWarrior.context(context)
+    if context == nil then
+        context = ''
+    end
+    TaskWarrior._context = context
+
+    return require'tasks.util'.run("task context " .. context)
+end
+
 
 --- @brief sync the taskwarrior database with the server
 --- @param tasks table
@@ -130,5 +143,5 @@ function TaskWarrior.convert_datetime_string(value)
         object. This method is not mandatory.
     --]]
 end
-
-return TaskWarrior
+_G.TaskWarrior = TaskWarrior
+return _G.TaskWarrior

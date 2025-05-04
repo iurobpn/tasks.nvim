@@ -1,3 +1,4 @@
+TaskWarrior = require'tasks.taskwarrior'
 local Workspace = require 'tasks.ws'
 local M = {
     folder = os.getenv("HOME") .. '/git/my/home/pkm/',
@@ -214,7 +215,7 @@ end
 ---@return string
 function M.toshortstring(task)
     local mtags = ''
-    utils = require'utils'
+    local utils = require'utils'
     for k,v in pairs(task) do
         if not utils.contains(nonmtags,k) then
             mtags = mtags .. string.format('[%s:: %s]', k, v)
@@ -497,7 +498,7 @@ if vim ~= nil and vim.api.nvim_set_keymap ~= nil then
 end
 
 require"class"
-M = class(M, { constructor = function(self, folder, filename)
+M = _G.class(M, { constructor = function(self, folder, filename)
     self:set_workspace(folder, filename)
 end
 })
@@ -505,11 +506,10 @@ end
 function M.get_indexer(folder,filename)
     return require('tasks.indexer').get_indexer(folder, filename)
 end
-_G.tasks = M
 
-_G.tasks.index = function()
-    local indexer = _G.tasks.indexer
-    local ws = _G.tasks.ws[_G.tasks.current_ws]
+M.index = function()
+    local indexer = M.indexer
+    local ws = M.ws[M.current_ws]
     if ws == nil then
         print('No workspace found')
         return
@@ -520,8 +520,8 @@ _G.tasks.index = function()
     end
     indexer.index(ws.folder)
 end
-_G.tasks.get_filename = function()
-    local ws = _G.tasks.ws[_G.tasks.current_ws]
+M.get_filename = function()
+    local ws = M.ws[M.current_ws]
     if ws == nil then
         print('No workspace found')
         return
@@ -532,15 +532,28 @@ _G.tasks.get_filename = function()
     end
     return ws:get_filename()
 end
+function M.complete(arg_lead, cmd_line, cursor_pos)
+    -- { 'add', 'ls', 'rm', 'done', 'import', 'export', 'index', 'context' }
+    -- These are the valid completions for the command
+    local options = { "ls", "context", "add", "rm", "done", "import", "export" }
+    -- Return all options that start with the current argument lead
+    return vim.tbl_filter(function(option)
+        return vim.startswith(option, arg_lead)
+    end, options)
+end
 
 -- Or map to a keybinding (e.g., pressing <leader>jr runs the function)
 vim.api.nvim_set_keymap('n', '<LocalLeader>j', ':JqCurrent<CR>', { noremap = true, silent = true })
 -- Add a command to run index function
-vim.api.nvim_create_user_command('TasksIndex', 'lua _G.tasks.index()',
-    {
-        nargs = 0,
-        desc = 'Index note tasks  and save into json file'
-    }
+vim.api.nvim_create_user_command('Task',
+        function(args)
+            M.cmd(args)
+        end,
+        {--<add|ls|context|rm|done|import|export|index>
+            nargs = '*',
+            complete = M.complete,
+            desc = 'Task management command'
+        }
 )
 end
 -- Define the autocommand to trigger on saving a markdown file
@@ -558,4 +571,261 @@ end
 --     autocmd BufLeave *md lua require'tasks'.CloseJqFloat()
 --   augroup END
 -- ]])
-return _G.tasks
+
+-- Task command handler
+function M.cmd(args)
+    local subcommand = args.fargs[1]
+    if not subcommand then
+        print("Usage: :Task <add|ls|context|rm|done|import|export|index> [arguments]")
+        return
+    end
+
+    local nargs = ''
+    if args.fargs[2] ~= nil then
+        nargs = table.concat(args.fargs, " ", 2)
+    end
+
+    if subcommand == 'add' then
+        if nargs == '' then
+            print("Usage: :Task add <description>")
+            return
+        end
+        M.add(nargs)
+    elseif subcommand == 'context' then
+        if nargs == '' then
+            print('context: ' .. TaskWarrior._context)
+        else
+            M.context(nargs)
+        end
+    elseif subcommand == 'ls' then
+        M.list(nargs)
+    elseif subcommand == 'rm' then
+        local task_id_str = args.fargs[2]
+        if task_id_str == nil then
+            print("Usage: :Task rm <task_id>")
+            return
+        end
+        local task_id = tonumber(task_id_str)
+        M.rm(task_id)
+    elseif subcommand == 'done' then
+        local task_id_str = args.fargs[2]
+        if task_id_str == nil then
+            print("Usage: :Task done <task_id>")
+            return
+        end
+        local task_id = tonumber(task_id_str)
+        M.done(task_id)
+    elseif subcommand == 'import' then
+        local tag = args.fargs[2] -- Optional tag
+        M.import(tag)
+    elseif subcommand == 'export' then
+        M.export()
+    elseif subcommand == 'index' then
+        M.index()
+    else
+        print("Invalid Task command. Usage: :Task <new|list|del|done|add|import|export> [arguments]")
+    end
+end
+
+-- Task management functions
+function M.add(name)
+    vim.notify("Task created with name: " .. name)
+    if name == "" then
+        print("Task name cannot be empty.")
+        return
+    end
+
+    local id = get_next_task_id()
+    tasks[id] = {
+        id = id,
+        name = name,
+        description = "",
+        project_id = nil,
+        start_time = nil,
+        estimated_time = nil,
+        time_worked = 0,
+    }
+    table.insert(M.active, id)
+    -- save_data()
+    vim.notify("Task created with ID:", id)
+    return tasks[id]
+end
+
+function M.context(str)
+    if str == nil or str == "" then
+        M.context = "none"
+    else
+        M.context = str
+        TaskWarrior.context(str)
+    end
+end
+
+-- fetch tasks from tawk warrior with a giver filter
+-- @param filter string
+-- @return table
+function M.list(filter)
+    filter = filter or ''
+    print("Filter: " .. filter)
+    local Filter = require'tasks.filter'
+    local filterObj = Filter()
+    filterObj:add(filter)
+    local raw_tasks = filterObj:get_tasks()
+    local tasks = require'cjson'.decode(raw_tasks)
+    local str_tasks = {}
+    if type(tasks[1]) == 'table' then
+        for _, task in ipairs(tasks) do
+            table.insert(str_tasks, "- [ ] " .. task.description .. " @{" .. task.uuid .. "}")
+        end
+    end
+    M.select_tasks(str_tasks)
+
+    -- print("Number of tasks: " .. #tasks)
+end
+
+function M.select_tasks(tasks,action)
+    local sel = function(selected)
+        for _, task in ipairs(selected) do
+            local uuid = task:match("@{(.*)}")
+            if uuid then
+                vim.api.nvim_put({task}, "l", true, true)
+            end
+        end
+    end
+    if action == nil then
+        action = sel
+    end
+
+    require'fzf-lua'.fzf_exec(str_tasks, {
+        fzf_opts = {
+            -- ["--height"] = "50%",
+            ["--layout"] = "reverse",
+            ["--info"] = "inline",
+            ["--multi"] = true,
+            ["--preview"] = "task $(echo {} | sed 's/\\(.*\\)@{\\(.*\\)}/\\2/')",
+            -- ["--preview"] = "echo {} | cut -d' ' -f3- | task show",
+        },
+        actions = {
+            ["default"] =  action,
+        },
+    })
+
+end
+
+function M.rm(task_id)
+    if not task_id or not tasks[task_id] then
+        print("Invalid task ID.")
+        return
+    end
+
+    tasks[task_id] = nil
+    for i, id in ipairs(M.active) do
+        if id == task_id then
+            table.remove(M.active, i)
+            break
+        end
+    end
+    for i, id in ipairs(M.done) do
+        if id == task_id then
+            table.remove(M.done, i)
+            break
+        end
+    end
+
+    -- Remove related logs
+    for i = #logs, 1, -1 do
+        if logs[i].task_id == task_id then
+            table.remove(logs, i)
+        end
+    end
+
+    print("Task deleted:", task_id)
+end
+
+function M.done(task_id)
+    if not task_id or not tasks[task_id] then
+        print("Invalid task ID.")
+        return
+    end
+
+    local task = tasks[task_id]
+
+    -- Compute final time worked
+    if not task.time_worked then
+        task.time_worked = 0
+    end
+
+    -- Move task to M.done
+    for i, id in ipairs(M.active) do
+        if id == task_id then
+            table.remove(M.active, i)
+            break
+        end
+    end
+    table.insert(M.done, task_id)
+
+    save_data()
+
+    -- Display task
+    print("Task marked as done:")
+    print(format_task(task))
+end
+
+-- Import tasks from the 'tasks' plugin
+function M.import(tag)
+    -- Assume tasks_plugin.query returns a list of tasks
+    local query_params = {}
+    if tag then
+        query_params.tag = tag
+    end
+
+    local external_tasks = tasks_plugin.search(query_params)
+    if not external_tasks then
+        print("Failed to import tasks from the 'tasks' plugin.")
+        return
+    end
+
+    for _, ext_task in ipairs(external_tasks) do
+        local id = get_next_task_id()
+        tasks[id] = {
+            id = id,
+            name = ext_task.name or ext_task.title,
+            description = ext_task.description or "",
+            project_id = nil,
+            start_time = nil,
+            estimated_time = ext_task.estimated_time,
+            time_worked = 0,
+            external_id = ext_task.id, -- Keep track of the external task ID
+        }
+        table.insert(M.active, id)
+    end
+
+    save_data()
+    print("Imported tasks from the 'tasks' plugin.")
+end
+
+-- Export updated tasks with time data to the 'tasks' plugin
+function M.export()
+    -- for _, task_id in ipairs(M.active) do
+    --     local task = tasks[task_id]
+        -- if task.external_id then
+            -- Assume tasks_plugin.update_task updates a task by ID
+            -- TaskWarrior.update_task(task.external_id {
+            --     time_worked = task.time_worked,
+            -- })
+        -- end
+    -- end
+
+    -- for _, task_id in ipairs(M.done) do
+    --     local task = tasks[task_id]
+    --     if task.external_id then
+    --         TaskWarrior.update_task(task.external_id, {
+    --             time_worked = task.time_worked,
+    --             status = 'done',
+    --         })
+    --     end
+    -- end
+
+    print("Exported updated tasks to the 'tasks' plugin.")
+end
+
+return M
