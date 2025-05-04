@@ -53,4 +53,8 @@ function Filter:get_context()
     return context, filter
 end
 
+
+require'class'
+Filter = _G.class(Filter)
+
 return Filter
