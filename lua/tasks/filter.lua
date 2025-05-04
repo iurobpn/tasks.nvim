@@ -20,7 +20,7 @@ function Filter:clear()
 end
 function Filter:get_tasks()
     local filter = self:build()
-    local out = require'util'.run("task " .. filter .. " export")
+    local out = require'tasks.util'.run("task " .. filter .. " export")
     return out
 end
 -- @brief build the filter expression
@@ -44,7 +44,7 @@ end
 ---
 --- @returns string context name, string context definition
 function Filter:get_context()
-    local out = require'util'.run("task context | grep yes | grep read")
+    local out = require'tasks.util'.run("task context | grep yes | grep read")
     if out == "" then
         return "none", ''
     end
