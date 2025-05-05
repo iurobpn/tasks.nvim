@@ -49,8 +49,13 @@ end
 --- @brief Import a taskwarrior json string
 --- @param task table
 --- @return string uuid
-function TaskWarrior.save_task(task)
-    local str_task = require'cjson'.encode(task.data)
+function TaskWarrior.update_task(task)
+    local str_task = ''
+    if type(task) == 'table' then
+        str_task = require'cjson'.encode(task.data)
+    else
+        str_task = task
+    end
     local uuids = TaskWarrior.import(str_task)
 
     return uuids[1] or ''
@@ -67,6 +72,12 @@ end
 --- @param task table
 function TaskWarrior.start_task(task)
     return TaskWarrior.run_cmd('start', task.data.uuid)
+end
+
+--- @brief add a new task
+--- @param task string
+function TaskWarrior.add_task(task)
+    return TaskWarrior.run('task add ' .. task)
 end
 
 --- @brief Run a command on the task

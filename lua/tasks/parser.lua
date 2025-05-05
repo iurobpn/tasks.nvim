@@ -7,8 +7,104 @@ local M = {
         description = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
         tag = '(#[a-zA-Z_%-]+)',
         parameter = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
-        metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'} -- a specific metatag
-    }
+        metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'}, -- a specific metatag
+        uuid='@{[a-zA-Z0-9%-]+}',
+    },
+
+    fields = {
+        Status      = {
+            type = 'string',
+            pattern = '%- %s*%[%s*([xv ])%s*%]',
+        },
+        Uuid        = {
+            type = 'hex',
+            pattern = '@{[a-zA-Z0-9%-]+}',
+        },
+        Entry       = {
+            type = 'date',
+            pattern = '',
+        },
+        Description = {
+            type = 'string',
+            pattern = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
+        },
+        Start       = {
+            type = 'date',
+            pattern = '',
+        },
+        End         = {
+            type = 'date',
+            pattern = '',
+        },
+        Due         = {
+            type = 'date',
+            pattern = '',
+        },
+        Until       = {
+            type = 'date',
+            pattern = '',
+        },
+        Wait        = {
+            type = 'date',
+            pattern = '',
+        },
+        Modified    = {
+            type = 'date',
+            pattern = '',
+        },
+        Scheduled   = {
+            type = 'date',
+            pattern = '',
+        },
+        Recur       = {
+            type = 'string',
+            pattern = '',
+        },
+        Mask        = {
+            type = 'string',
+            pattern = '',
+        },
+        Imask       = {
+            type = 'integer',
+            pattern = '',
+        },
+        Parent      = {
+            type = 'UUID',
+            pattern = '',
+        },
+        Project     = {
+            type = 'string',
+            pattern = '',
+        },
+        Priority    = {
+            type = 'string',
+            pattern = '',
+        },
+        Depends     = {
+            type = 'string',
+            pattern = '',
+        },
+        Tags        = {
+            type = 'string',
+            pattern = '(#[a-zA-Z_%-]+)',
+        },
+        Annotation  = {
+            type = 'string',
+            pattern = '',
+        },
+        Filename    = {
+            type = 'string',
+            pattern = '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
+        },
+        Line_number = {
+            type = 'string',
+            pattern = ':(%d+):',
+        },
+        Parameter   = {
+            type = 'string',
+            pattern = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
+        },
+    },
 }
 
 -- Parse a task string into a table
@@ -45,6 +141,7 @@ function M.parse(task)
 
     local parameters = {}
 
+    local uuid = task:match(M.field.Uuid.pattern)
     local filename = task:match(M.pattern.filename)
     -- task = task.gsub(task, M.pattern.filename, '')
     local line_number = tonumber(task:match(M.pattern.line_number))
@@ -57,7 +154,7 @@ function M.parse(task)
     local k = 0
     for param, value in task:gmatch(M.pattern.parameter) do
         parameters[param] = value
-        description = description:gsub(M.pattern.parameter .. '%s*', '') --.' *%[' .. param .. ':: *' .. value .. ' *%]', '')
+        description = description:gsub(M.pattern.parameter .. '%s*', '')
         k = k + 1
     end
 
@@ -66,6 +163,7 @@ function M.parse(task)
         return
     end
     local task_t = {
+        uuid = uuid,
         filename = filename,
         line_number = line_number,
         status = status,
