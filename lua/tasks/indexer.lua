@@ -115,7 +115,7 @@ function mod.index_thread()
     print('Indexing tasks ...')
     local thread = Thread(
         function()
-            -- local Tasks = require'tasks'
+            local Tasks = require'tasks'
             require"class"
             if Tasks == nil then
                 print('Tasks object is nil')

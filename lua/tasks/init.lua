@@ -484,7 +484,7 @@ local function run_tasks_index_once_per_day()
 
     -- If the last run date is different from today, run TasksIndex and update the file
     if last_run_date ~= today then
-        vim.cmd("TasksIndex")
+        vim.cmd("Task index")
         vim.fn.writefile({today}, last_run_file)
     end
 end
@@ -666,8 +666,7 @@ end
 -- @param filter string
 -- @return table
 function M.list(filter)
-    filter = filter or ')'
-    print("Filter: " .. filter)
+    filter = filter or ''
     local Filter = require'tasks.filter'
     local filterObj = Filter()
     filterObj:add(filter)
@@ -679,25 +678,23 @@ function M.list(filter)
             table.insert(str_tasks, "- [ ] " .. task.description .. " @{" .. task.uuid .. "}")
         end
     end
-    M.select_tasks(str_tasks)
 
-    -- print("Number of tasks: " .. #tasks)
+    M.select_tasks(str_tasks)
 end
 
 function M.select_tasks(tasks,action)
-    local sel = function(selected)
-        for _, task in ipairs(selected) do
-            local uuid = task:match("@{(.*)}")
-            if uuid then
-                vim.api.nvim_put({task}, "l", true, true)
+    if action == nil then
+        action = function(selected)
+            for _, task in ipairs(selected) do
+                local uuid = task:match("@{(.*)}")
+                if uuid then
+                    vim.api.nvim_put({task}, "l", true, true)
+                end
             end
         end
     end
-    if action == nil then
-        action = sel
-    end
 
-    require'fzf-lua'.fzf_exec(str_tasks, {
+    require'fzf-lua'.fzf_exec(tasks, {
         fzf_opts = {
             -- ["--height"] = "50%",
             ["--layout"] = "reverse",
@@ -710,7 +707,6 @@ function M.select_tasks(tasks,action)
             ["default"] =  action,
         },
     })
-
 end
 
 function M.update(uuid)
@@ -735,5 +731,7 @@ end
 function M.done(task_id)
     TaskWarrior.task_done(task_id)
 end
+
+_G.tasks = M
 
 return M

@@ -141,7 +141,7 @@ function M.parse(task)
 
     local parameters = {}
 
-    local uuid = task:match(M.field.Uuid.pattern)
+    local uuid = task:match(M.fields.Uuid.pattern)
     local filename = task:match(M.pattern.filename)
     -- task = task.gsub(task, M.pattern.filename, '')
     local line_number = tonumber(task:match(M.pattern.line_number))

@@ -10,7 +10,7 @@ local Filter = {
 -- - add a param to the list of params
 function Filter:add(param)
     print("Filter:add " .. param)
-    if param == nil then
+    if param == nil or param == '' then
         return
     end
     print("Filter:add " .. param .. ' added')
@@ -32,7 +32,10 @@ end
 function Filter:build()
     local filter = self.default
     if #self.params > 0 then
-        filter = filter .. " and " .. table.concat(self.params, " and ")
+        local s = table.concat(self.params, " and ")
+        if #s > 0 then
+            filter = filter .. " and " .. s
+        end
     end
     -- local context, cparams = self.get_context()
     -- if context ~= "none" then
