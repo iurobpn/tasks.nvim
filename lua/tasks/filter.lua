@@ -1,7 +1,7 @@
 TaskWarrior = require'tasks.taskwarrior'
 local Filter = {
     default = "status:pending",
-    params = { },
+    params = nil,
 }
 
 -- @brief Filter add param method
@@ -85,6 +85,11 @@ end
 
 
 require'class'
-Filter = _G.class(Filter)
+Filter = _G.class(Filter, { 
+    constructor = function(self)
+        self.params = {}
+        return self
+    end
+})
 
 return Filter
