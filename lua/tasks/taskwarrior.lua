@@ -28,7 +28,6 @@ local p = {
 }
 local TaskWarrior = {
     _context = 'none',
-    
     fields = {
         status      = {
             type = 'string',
@@ -176,9 +175,9 @@ function TaskWarrior.start_task(task)
 end
 
 --- @brief add a new task
---- @param task string
+--- @param task string jsonified task
 function TaskWarrior.add_task(task)
-    return TaskWarrior.run('task add ' .. task)
+    return TaskWarrior.import(task)
 end
 
 --- @brief Run a command on the task
