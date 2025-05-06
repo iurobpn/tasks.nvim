@@ -16,23 +16,6 @@ Query = class(Query, {constructor = function(self, filename)
     return self
 end})
 
-function Query.params_to_string(parameters)
-    local str = ''
-    for k,v in pairs(parameters) do
-        str = str .. '[' .. k .. ':: ' .. v .. '] '
-    end
-    return str
-end
-
-function Query.tags_to_string(tags)
-    local str = ''
-    for _,tag in ipairs(tags) do
-        str = str ..  tag .. ' '
-    end
-
-    return str
-end
-
 function Query:select_by_id(id)
     local fmt = string.format
     id = id or 1

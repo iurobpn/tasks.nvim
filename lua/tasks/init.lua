@@ -38,14 +38,6 @@ local M = {
 }
 
 
-local nonmtags = {
-    'description',
-    'status',
-    'due',
-    'tags',
-    'filename',
-    'line_number',
-}
 
 M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
 -- M.query = require('tasks.' .. M.backend)
@@ -143,7 +135,7 @@ function M.recurrent_done()
 
     return true
 end
-
+------------------- jq queries -------------------
 --- Search for tasks in the json file
 --- @param tag string or nil
 --- @param ... table
@@ -210,66 +202,6 @@ function M.ShowJqResult()
     end
 end
 
----convert task to a short string
----@param task table 
----@return string
-function M.toshortstring(task)
-    local mtags = ''
-    local utils = require'utils'
-    for k,v in pairs(task) do
-        if not utils.contains(nonmtags,k) then
-            mtags = mtags .. string.format('[%s:: %s]', k, v)
-        end
-    end
-
-    local tags = table.concat(task.tags,' ')
-    -- local filename = fs.basename(task.filename)
-    local file = '' -- '| ' .. filename .. ':' .. task.line_number
-    local line = string.format('%s %s %s', task.description, tags, file)
-    return line
-end
-
----convert a task to a string
----@param task table
----@return string
-function M.tostring(task)
-    local status
-    if task.status == 'not started' then
-        status = ' '
-    elseif task.status == 'in progress' then
-        status = '.'
-    elseif task.status == 'done' then
-        status = 'x'
-    end
-
-    local due = ''
-    if task.due ~= nil then
-        due = string.format('[%s:: %s]', 'due', task.due)
-    end
-    local tags = table.concat(task.tags,' ')
-    local file = '| ' .. task.filename .. ':' .. task.line_number
-
-    local utils = require'utils'
-    local mtags = ''
-    if task then
-        for k,v in pairs(task) do
-            if not utils.contains(nonmtags,k) then
-                mtags = mtags .. string.format(' [%s:: %s]', k, v)
-            end
-        end
-    end
-    local line = string.format('- [%s] %s %s %s %s %s', status, task.description, tags, due, mtags, file)
-    return line
-end
-
---- convert a metatag to a string
----@param mtag string
----@param val any
----@return string
-function M.mtag_to_string(mtag,val)
-    return string.format('[%s:: %s]', mtag, val)
-end
-
 function M.UpdateJqFloat()
     if not vim.api.nvim_buf_is_valid(0) then return end
 
@@ -320,8 +252,9 @@ function M.UpdateJqFloat()
             local tasks_str = {}
 
             if lines ~= nil then
+                local format = require'tasks.format'
                 for _, task  in ipairs(taskss) do
-                    table.insert(tasks_str,M.tostring(task))
+                    table.insert(tasks_str,format.tostring(task))
                 end
                 -- Create a new buffer for the floating window
                M.jq.bufnr = vim.api.nvim_create_buf(false, true)  -- Create a scratch buffer
@@ -437,6 +370,24 @@ function M.run_jq_cmd_from_current_line()
     M.views.open_window(taskss, title)
 end
 
+function M.CloseJqFloat()
+    if M.jq.vid and vim.api.nvim_win_is_valid(M.jq.vid) then
+        vim.api.nvim_win_close(M.jq.vid, true)
+        M.jq.vid = nil
+        M.jq.bufnr = nil
+        M.jq.line = nil
+    end
+end
+
+-- Create the :JqFix command
+    vim.api.nvim_create_user_command('JqCurrent', M.run_jq_cmd_from_current_line, {})
+-- Or map to a keybinding (e.g., pressing <leader>jr runs the function)
+vim.api.nvim_set_keymap('n', '<LocalLeader>j', ':JqCurrent<CR>', { noremap = true, silent = true })
+
+
+------------------- jq queries ------------------------------
+
+
 function M.check_completion()
     local line = vim.api.nvim_get_current_line()
     if string.match(line, '%- %[x%]') then
@@ -452,18 +403,7 @@ function M.insert_completed_tag()
     end
 end
 
-function M.CloseJqFloat()
-    if M.jq.vid and vim.api.nvim_win_is_valid(M.jq.vid) then
-        vim.api.nvim_win_close(M.jq.vid, true)
-        M.jq.vid = nil
-        M.jq.bufnr = nil
-        M.jq.line = nil
-    end
-end
 
-if vim ~= nil and vim.api.nvim_create_user_command ~= nil then
--- Create the :JqFix command
-    vim.api.nvim_create_user_command('JqCurrent', M.run_jq_cmd_from_current_line, {})
 
 
 -- Helper function to get today's date in "YYYY-MM-DD" format
@@ -504,6 +444,20 @@ M = _G.class(M, { constructor = function(self, folder, filename)
 end
 })
 
+M.get_filename = function()
+    local ws = M.ws[M.current_ws]
+    if ws == nil then
+        print('No workspace found')
+        return
+    end
+    if ws.folder == nil then
+        print('No folder found')
+        return
+    end
+    return ws:get_filename()
+end
+
+--- indexing current workspace   -------------------
 function M.get_indexer(folder,filename)
     return require('tasks.indexer').get_indexer(folder, filename)
 end
@@ -521,18 +475,7 @@ M.index = function()
     end
     indexer.index(ws.folder)
 end
-M.get_filename = function()
-    local ws = M.ws[M.current_ws]
-    if ws == nil then
-        print('No workspace found')
-        return
-    end
-    if ws.folder == nil then
-        print('No folder found')
-        return
-    end
-    return ws:get_filename()
-end
+--- indexing current workspace   -------------------
 
 function M.complete(arg_lead, cmd_line, cursor_pos)
     -- { 'add', 'ls', 'rm', 'done', 'import', 'export', 'index', 'context' }
@@ -544,9 +487,7 @@ function M.complete(arg_lead, cmd_line, cursor_pos)
     end, options)
 end
 
--- Or map to a keybinding (e.g., pressing <leader>jr runs the function)
-vim.api.nvim_set_keymap('n', '<LocalLeader>j', ':JqCurrent<CR>', { noremap = true, silent = true })
-
+if vim ~= nil and vim.api.nvim_create_user_command ~= nil then
 -- Add a command to run index function
 vim.api.nvim_create_user_command('Task',
         function(args)

@@ -12,99 +12,99 @@ local M = {
     },
 
     fields = {
-        Status      = {
+        status      = {
             type = 'string',
             pattern = '%- %s*%[%s*([xv ])%s*%]',
         },
-        Uuid        = {
+        uuid        = {
             type = 'hex',
             pattern = '@{[a-zA-Z0-9%-]+}',
         },
-        Entry       = {
+        entry       = {
             type = 'date',
             pattern = '',
         },
-        Description = {
+        description = {
             type = 'string',
             pattern = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
         },
-        Start       = {
+        start       = {
             type = 'date',
             pattern = '',
         },
-        End         = {
+        due         = {
             type = 'date',
             pattern = '',
         },
-        Due         = {
+        wait        = {
             type = 'date',
             pattern = '',
         },
-        Until       = {
+        modified    = {
             type = 'date',
             pattern = '',
         },
-        Wait        = {
+        scheduled   = {
             type = 'date',
             pattern = '',
         },
-        Modified    = {
-            type = 'date',
-            pattern = '',
-        },
-        Scheduled   = {
-            type = 'date',
-            pattern = '',
-        },
-        Recur       = {
+        recur       = {
             type = 'string',
             pattern = '',
         },
-        Mask        = {
+        mask        = {
             type = 'string',
             pattern = '',
         },
-        Imask       = {
+        imask       = {
             type = 'integer',
             pattern = '',
         },
-        Parent      = {
+        parent      = {
             type = 'UUID',
             pattern = '',
         },
-        Project     = {
+        project     = {
             type = 'string',
             pattern = '',
         },
-        Priority    = {
+        priority    = {
             type = 'string',
             pattern = '',
         },
-        Depends     = {
+        depends     = {
             type = 'string',
             pattern = '',
         },
-        Tags        = {
+        tags        = {
             type = 'string',
             pattern = '(#[a-zA-Z_%-]+)',
         },
-        Annotation  = {
+        annotation  = {
             type = 'string',
             pattern = '',
         },
-        Filename    = {
+        filename    = {
             type = 'string',
             pattern = '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
         },
-        Line_number = {
+        line_number = {
             type = 'string',
             pattern = ':(%d+):',
         },
-        Parameter   = {
+        parameter   = {
             type = 'string',
             pattern = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
         },
     },
+}
+M["end"] = {
+    type = 'date',
+    pattern = '',
+}
+M["until"] = {
+    type = 'date',
+    pattern = '',
 }
 
 -- Parse a task string into a table
@@ -141,7 +141,7 @@ function M.parse(task)
 
     local parameters = {}
 
-    local uuid = task:match(M.fields.Uuid.pattern)
+    local uuid = task:match(M.fields.uuid.pattern)
     local filename = task:match(M.pattern.filename)
     -- task = task.gsub(task, M.pattern.filename, '')
     local line_number = tonumber(task:match(M.pattern.line_number))

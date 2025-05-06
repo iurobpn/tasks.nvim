@@ -49,22 +49,6 @@ Query.get_path = function(jsonfile)
     return Query.path .. '/' .. Query.jsonfiles[jsonfile].mod_dir
 end
 
-function Query.params_to_string(parameters)
-    local str = ''
-    for k,v in pairs(parameters) do
-        str = str .. '[' .. k .. ':: ' .. v .. '] '
-    end
-    return str
-end
-
-function Query.tags_to_string(tags)
-    local str = ''
-    for _,tag in ipairs(tags) do
-        str = str ..  tag .. ' '
-    end
-    return str
-end
-
 function Query:select_by_id(id)
     -- local query = fmt('jq "[ .[] | select(.id == %d)" %s ]', id, self:file())
     if type(id) == 'string' then

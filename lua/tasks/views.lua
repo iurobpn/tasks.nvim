@@ -22,28 +22,6 @@ not_query = [[ jq '[ .[] | select(.status != "done" and (.tags[] != "%s" and ( (
 --     return self
 -- end})
 
-function M.params_to_string(parameters)
-    local str = ''
-    if parameters == nil then
-        return str
-    end
-    for k, v in pairs(parameters) do
-        str = str .. '[' .. k .. ':: ' .. v .. '] '
-    end
-    return str
-end
-
-function M.tags_to_string(tags)
-    local str = ''
-    if tags == nil then
-        return str
-    end
-    for _, tag in ipairs(tags) do
-        str = str .. tag .. ' '
-    end
-    return str
-end
-
 function M.open_context_window(filename, line_nr)
     -- local context_width = math.floor(vim.o.columns * 0.4)
     local context_height = math.floor(vim.o.lines * 0.5)
@@ -176,6 +154,7 @@ end
 
 function M.format_tasks_short(tasks)
     local tasks_qf = {}
+    local format = require"tasks.format"
     for _, task in pairs(tasks) do
         if task.line_number == nil then
             error('task.line_number is nil')
@@ -184,8 +163,8 @@ function M.format_tasks_short(tasks)
             filename = task.filename,
             lnum = task.line_number,
             text = (task.description or '') ..
-                ' ' .. M.params_to_string(task.parameters) ..
-                ' ' .. M.tags_to_string(task.tags)
+                ' ' .. format.params_to_string(task.parameters) ..
+                ' ' .. format.tags_to_string(task.tags)
         })
     end
 
@@ -204,6 +183,7 @@ function M.format_timeline(tasks_in)
     local first = true
     local last_due = ''
     local i = 0
+    local format = require"tasks.format"
     for _, task in pairs(tasks_in) do
         if task.line_number == nil then
             error('task.line_number is nil')
@@ -234,7 +214,8 @@ function M.format_timeline(tasks_in)
 
         i = i + 1
         last_due = task.due
-        table.insert(tasks, glyphs.circle .. ' ' .. tasks.toshortstring(task))
+
+        table.insert(tasks, glyphs.circle .. ' ' .. format.toshortstring(task))
         i = i + 1
         table.insert(file_line, { file = task.filename, line = task.line_number, buf_line = i, due = task.due })
         i = i + 1
@@ -250,11 +231,12 @@ function M.format_tasks(tasks_in)
         vim.notify('tasks_in is nil', vim.log.levels.ERROR)
         return
     end
+    local format = require"tasks.format"
     for _, task in pairs(tasks_in) do
         if task.line_number == nil then
             error('task.line_number is nil')
         end
-        table.insert(tasks, tasks.tostring(task))
+        table.insert(tasks, format.tostring(task))
         table.insert(file_line, { file = task.filename, line = task.line_number })
     end
 
