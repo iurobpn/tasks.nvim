@@ -28,6 +28,7 @@ local p = {
 }
 local TaskWarrior = {
     _context = 'none',
+    debug=true,
     fields = {
         status      = {
             type = 'string',
@@ -115,19 +116,34 @@ local TaskWarrior = {
         },
     },
 }
+local prefix = ''
+if TaskWarrior.debug then
+    prefix = 'TASKDATA=/tmp/.task; '
+
+end
+
+--- @brief Get a taskwarrior task
+--- @param uuid string
+--- @return table task
+function get_task(uuid)
+    local json = require'util'.run(prefix .. "task " .. uuid .. " export")
+    local data = require'cjson'.decode(json)
+
+    return data
+end
 --- @brief Import a taskwarrior json file
 --- @param filename string
 --- @return table uuids
 function TaskWarrior.import_file(filename)
-    local str_uuids =  require'util'.run("task import " .. filename)
+    local str_uuids =  require'util'.run(prefix .. "task import " .. filename)
     return TaskWarrior.get_uuids(str_uuids)
 end
 
 --- @brief Import a taskwarrior json tasks string
---- @param task string
+--- @param task table
 --- @return table uuids
 function TaskWarrior.import(task)
-    local uuids =  require'util'.run("echo '" .. task .. "' | task import ")
+    local uuids =  require'util'.run(prefix .. "echo '" .. task .. "' | task import ")
     return TaskWarrior.get_uuids(uuids) -- uuids are strings
 end
 
@@ -161,6 +177,8 @@ function TaskWarrior.update_task(task)
     return uuids[1] or ''
 end
 
+
+
 --- @brief Import a taskwarrior json string
 --- @param task table
 --- @return string
@@ -187,7 +205,7 @@ end
 --- @return string output
 function TaskWarrior.run_cmd(cmd, uuid, ...)
     local args = ... or ''
-    cmd = "task " .. uuid .. " " .. cmd .. " " .. args
+    cmd = prefix .. "task " .. uuid .. " " .. cmd .. " " .. args
     local out = require'util'.run(cmd)
     return out
 end
