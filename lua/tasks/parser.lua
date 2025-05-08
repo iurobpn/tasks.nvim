@@ -1,132 +1,45 @@
 #!/usr/local/bin/lua
 local M = {
-    pattern = {
-        status = '%- %s*%[%s*([xv ])%s*%]',
-        filename = '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
-        line_number = ':(%d+):',
-        description = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
-        tag = '(#[a-zA-Z_%-]+)',
-        parameter = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
-        metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'}, -- a specific metatag
-        uuid='@{[a-zA-Z0-9%-]+}',
-    },
-
-    fields = {
-        status      = {
-            type = 'string',
-            pattern = '%- %s*%[%s*([xv ])%s*%]',
+    -- pattern = {
+    --     status = '%- %s*%[%s*([xv ])%s*%]',
+    --     filename = '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
+    --     line_number = ':(%d+):',
+    --     description = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
+    --     tag = '(#[a-zA-Z_%-]+)',
+    --     parameter = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
+    --     metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'}, -- a specific metatag
+    --     uuid='@{[a-zA-Z0-9%-]+}',
+    -- },
+    patterns = {
+        uuid = {
+            '@{(%x+-%x+-%x+-%x+)}',
         },
-        uuid        = {
-            type = 'hex',
-            pattern = '@{[a-zA-Z0-9%-]+}',
+        status = {
+            '%- %s*%[%s*([xv ])%s*%]',
         },
-        entry       = {
-            type = 'date',
-            pattern = '',
+        param = {
+            '%[([%a_]+)%s*::%s*([%w:%s%-]*)%]',
+            '%[([%a_]+):([%w:%-]*)%]',
+        },
+        tag = {
+            '([#+]%w[%w%d/_%-])',
         },
         description = {
-            type = 'string',
-            pattern = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
+            '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
         },
-        start       = {
-            type = 'date',
-            pattern = '',
+        filename = {
+            '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
         },
-        due         = {
-            type = 'date',
-            pattern = '',
-        },
-        wait        = {
-            type = 'date',
-            pattern = '',
-        },
-        modified    = {
-            type = 'date',
-            pattern = '',
-        },
-        scheduled   = {
-            type = 'date',
-            pattern = '',
-        },
-        recur       = {
-            type = 'string',
-            pattern = '',
-        },
-        mask        = {
-            type = 'string',
-            pattern = '',
-        },
-        imask       = {
-            type = 'integer',
-            pattern = '',
-        },
-        parent      = {
-            type = 'UUID',
-            pattern = '',
-        },
-        project     = {
-            type = 'string',
-            pattern = '',
-        },
-        priority    = {
-            type = 'string',
-            pattern = '',
-        },
-        depends     = {
-            type = 'string',
-            pattern = '',
-        },
-        tags        = {
-            type = 'string',
-            pattern = '(#[a-zA-Z_%-]+)',
-        },
-        annotation  = {
-            type = 'string',
-            pattern = '',
-        },
-        filename    = {
-            type = 'string',
-            pattern = '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
-        },
-        line_number = {
-            type = 'string',
-            pattern = ':(%d+):',
-        },
-        parameter   = {
-            type = 'string',
-            pattern = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
+        linenr = {
+            ':(%d+):',   
         },
     },
 }
-M["end"] = {
-    type = 'date',
-    pattern = '',
-}
-M["until"] = {
-    type = 'date',
-    pattern = '',
-}
-
--- Parse a task string into a table
-function M.find_metatags(task)
-    local metatags = {}
-    for mtag in task:gmatch(M.pattern.parameter) do
-        table.insert(metatags, mtag)
-        task = task:gsub(M.pattern.parameter, '')
-    end
-    return metatags, task
-end
-
-function M.get_param_value(task,metatag)
-    local pattern = '%[' .. metatag .. '%s*::%s*([a-zA-Z0-9:%- ]*)%]'
-    return task:match(pattern)
-end
 
 function M.parse(task)
     local status_map = {
-        ["[x]"] = "done",
-        ["[v]"] = "in progress",
-        ["[ ]"] = "not started"
+        ["[x]"] = "completed",
+        ["[ ]"] = "pending"
     }
 
     -- Extract the status and remove it from the task string
@@ -138,41 +51,41 @@ function M.parse(task)
     status = '[' .. status .. ']'
 
     status = status_map[status] or "not started yet"
+    local task_t = {}
+    task_t.status = status;
 
-    local parameters = {}
-
-    local uuid = task:match(M.fields.uuid.pattern)
-    local filename = task:match(M.pattern.filename)
-    -- task = task.gsub(task, M.pattern.filename, '')
-    local line_number = tonumber(task:match(M.pattern.line_number))
-    local description = task:match(M.pattern.description)
-    local tags = {}
-    for tag in task:gmatch(M.pattern.tag) do
-        tags[#tags+1] = tag
-        description = description:gsub(M.pattern.tag, '')
-    end
-    local k = 0
-    for param, value in task:gmatch(M.pattern.parameter) do
-        parameters[param] = value
-        description = description:gsub(M.pattern.parameter .. '%s*', '')
-        k = k + 1
+    for item in M.patterns do
+        if item ~= 'param' and item ~= 'tag' then
+            for pattern in item do
+                local it = task:match(pattern)
+                if it then
+                    task_t[item] = it
+                end
+            end
+        end
     end
 
-    if filename == nil or line_number == nil or description == nil then
+
+    task_t.tags = {}
+    for pattern in M.patterns.tag do
+        for tag in task:gmatch(pattern) do
+            table.insert(task_t.tags, tag)
+            task_t.description = description:gsub(pattern, '')
+        end
+    end
+    for pattern in M.patterns.param do
+        for param, value in task:gmatch(pattern) do
+            task_t[param] = value
+            description = description:gsub(pattern .. '%s*', '')
+            k = k + 1
+        end
+    end
+
+    if task_t.filename == nil or task_t.line_number == nil or task_t.description == nil then
         print('Could not parse task: ' .. task)
         return
     end
-    local task_t = {
-        uuid = uuid,
-        filename = filename,
-        line_number = line_number,
-        status = status,
-        description = description:match('^%s*(.*)%s*$'),
-        tags = tags,
-    }
-    for k, v in pairs(parameters) do
-        task_t[k] = v
-    end
+    task_t.description = task_t.description:match('^%s*(.*)%s*$')
 
     return task_t
 end
