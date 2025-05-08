@@ -12,7 +12,9 @@ local M = {
     -- },
     patterns = {
         uuid = {
-            '@{(%x+-%x+-%x+-%x+)}',
+            '@{(%x+%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x+)}',
+            -- '@{(%x[%x%-]+%x)}',
+            -- '@{(.*)}',
         },
         status = {
             '%- %s*%[%s*([xv ])%s*%]',
@@ -36,30 +38,61 @@ local M = {
     },
 }
 
+--- @brief get a value from a parameter:value pair in a line task 
+--- @param line string
+--- @param param string
+--- @return string
+function M.get_param_value(line, param)
+    -- Check if the line contains the parameter
+    for _, pattern in ipairs(M.patterns.param) do
+        for key, value in line:gmatch(pattern) do
+            -- Extract the value of the parameter
+            if key == param then
+                return value
+            end
+        end
+    end
+    return ''
+end
+
+--- @brief get uuid from a line task
+--- @param line string
+--- @return string
+function M.get_uuid(line)
+    -- Check if the line contains the uuid
+    for _, pattern in ipairs(M.patterns.uuid) do
+        for uuid in line:gmatch(pattern) do
+            return uuid
+        end
+    end
+    return ''
+end
+
 function M.parse(task)
     local status_map = {
-        ["[x]"] = "completed",
-        ["[ ]"] = "pending"
+        ["x"] = "completed",
+        [" "] = "pending"
     }
 
     -- Extract the status and remove it from the task string
-    local status = task:match(M.pattern.status)
+    local status = task:match(M.patterns.status[1])
     if status == nil then
         print('No status found in task: ' .. task)
         return
     end
-    status = '[' .. status .. ']'
 
-    status = status_map[status] or "not started yet"
     local task_t = {}
-    task_t.status = status;
+    task_t.status = status_map[status] or "pending"
+    
 
-    for item in M.patterns do
-        if item ~= 'param' and item ~= 'tag' then
-            for pattern in item do
+    for item, patterns in pairs(M.patterns) do
+        if item ~= 'param' and item ~= 'tag' and item ~= "status" then
+            for _,pattern in ipairs(patterns) do
                 local it = task:match(pattern)
                 if it then
                     task_t[item] = it
+                else
+                    -- print('Task: ' .. task .. ' does not match pattern: ' .. pattern)
                 end
             end
         end
@@ -67,25 +100,24 @@ function M.parse(task)
 
 
     task_t.tags = {}
-    for pattern in M.patterns.tag do
+    for _,pattern in ipairs(M.patterns.tag) do
         for tag in task:gmatch(pattern) do
             table.insert(task_t.tags, tag)
-            task_t.description = description:gsub(pattern, '')
+            task_t.description = task_t.description:gsub(pattern, '')
         end
     end
-    for pattern in M.patterns.param do
+    for _, pattern in ipairs(M.patterns.param) do
         for param, value in task:gmatch(pattern) do
             task_t[param] = value
-            description = description:gsub(pattern .. '%s*', '')
-            k = k + 1
+            task_t.description = task_t.description:gsub(pattern .. '%s*', '')
         end
     end
 
-    if task_t.filename == nil or task_t.line_number == nil or task_t.description == nil then
-        print('Could not parse task: ' .. task)
-        return
+    if task_t.description == nil then
+        print('Task has no description ' .. task)
+    else
+        task_t.description = task_t.description:match('^%s*(.*)%s*$')
     end
-    task_t.description = task_t.description:match('^%s*(.*)%s*$')
 
     return task_t
 end

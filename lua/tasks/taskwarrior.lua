@@ -13,7 +13,7 @@
 -- - it uses the util module to run commands and read files
 
     -- date = '%d%d%d%d%-[0-1]%d%-[0-3]%d%]',
-local local TaskWarrior = {
+local TaskWarrior = {
     _context = 'none',
     debug=true,
 
