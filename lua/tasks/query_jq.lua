@@ -6,7 +6,7 @@ local M = {
 local Query = {}
 
 -- static variables
-Query.path = '/home/gagarin/git/pkm'
+Query.path = '/home/gagarin/git/my/home/pkm'
 Query.jsonfiles = {
     tasks = {
         filename = 'tasks.json',
@@ -103,6 +103,7 @@ function Query.select_by_status(status)
 end
 
 function Query:select(option)
+    print('query:select')
     option = option or {}
     local cmd
     local andstr = ''
@@ -133,23 +134,33 @@ function Query:select(option)
 
         cmd = string.format("jq '%s'", query)
     end
+    print('cmd: ' .. cmd)
     local str_tasks = self:run(cmd)
+    -- print('str_tasks: ' .. str_tasks)
+    -- print('end of str_tasks')
     local tasks
-    if str_tasks == '' then
+    if str_tasks == '' or str_tasks == '[]' then
         tasks = {}
     else
-        tasks = vim.fn.json_decode(str_tasks)
+        tasks = require'cjson'.decode('{ "tasks": ' .. str_tasks .. ' }')
+        tasks = tasks.tasks
     end
-
+    print('tasks: ' .. vim.inspect(tasks))
+    print('end of query:select')
     return tasks
 end
 
 function Query:run(cmd)
-    table.insert(Query.hist, cmd)
+    print('query:run')
+    -- table.insert(Query.hist, cmd)
     local file = self:file()
-    -- print('cmd: ' .. cmd)
-    local str_tasks = require"utils".get_command_output(cmd .. ' ' .. file)
-    return str_tasks
+    cmd = cmd .. ' ' .. file
+    print('cmd in run: ' .. cmd)
+    local strtasks = ''
+    strtasks = require"tasks.util".run(cmd)
+    print('str_tasks in run(): ' .. strtasks)
+    print('end of str_tasks in run(): ')
+    return strtasks
 end
 
 M.Query = Query

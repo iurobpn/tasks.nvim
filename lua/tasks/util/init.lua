@@ -18,12 +18,14 @@ end
 --- @param filename string
 --- @return string output
 function M.read(filename)
+    local content = ''
     local fd = io.open(filename, "r")
     if not fd then
         print("Error: Unable to open file " .. filename)
         return ''
+    else
+        content = fd:read("*a")
     end
-    local content = fd:read("*a")
     fd:close()
     return content
 end

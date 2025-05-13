@@ -73,7 +73,7 @@ end
 local Query = {}
 
 -- static variables
-Query.path = '/home/gagarin/git/pkm'
+Query.path = '/home/gagarin/git/my/home/pkm'
 Query.jsonfiles = {
     tasks = {
         filename = 'tasks.json',
@@ -217,8 +217,9 @@ function Query:select(option)
 end
 
 function Query:run(cmd)
-    table.insert(Query.hist, cmd)
+    -- table.insert(Query.hist, cmd)
     local file = self:file()
+    print(cmd .. ' ' .. file)
     local str_tasks = require"utils".get_command_output(cmd .. ' ' .. file)
     return str_tasks
 end
