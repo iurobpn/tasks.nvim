@@ -35,6 +35,12 @@ local M = {
         bufnr = nil,   -- Variable to store the buffer number for the floating window,
         line = nil,          -- Variable to store the line number with the jq command,
     },
+    viewable_fields = {
+        'description',
+        'due',
+        'scheduled',
+        'tags',
+    }
 }
 
 
@@ -81,6 +87,38 @@ function M:add_workspace(name, folder)
     self.ws[name] = Workspace(name, folder)
 end
 
+function M:task2line(task)
+    local line = require'format'.tostring(task)
+    -- put task as a line pasted with p after a yy
+    vim.api.nvim_paste({line}, false, -1)
+
+    return line
+end
+
+function M:update()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'Parser'.parse(line)
+    if task == nil then
+        return
+    end
+    if task.uuid == nil then
+        M:add()
+        return
+    end
+    local old_task = TaskWarrior.get_task(task.uuid)
+    if old_task == nil then
+        vim.notify('Task not found')
+        return
+    end
+    for k, v in pairs(task) do
+        if old_task[k] ~= nil then
+            old_task[k] = v
+        end
+    end
+    local json = require'cjson'.encode(old_task)
+
+    return TaskWarrior.import_task(json)
+end
 
 -- make recurrent tasks done and add completion date
 function M.recurrent_done()
@@ -229,7 +267,7 @@ end
 function M.complete(arg_lead, cmd_line, cursor_pos)
     -- { 'add', 'ls', 'rm', 'done', 'import', 'export', 'index', 'context' }
     -- These are the valid completions for the command
-    local options = { "ls", "context", "add", "rm", "done", "import", "export", "mtwd" }
+    local options = { "ls", "context", "add", "rm", "done", "update", "update_all" }
     -- Return all options that start with the current argument lead
     return vim.tbl_filter(function(option)
         return vim.startswith(option, arg_lead)
@@ -250,6 +288,19 @@ vim.api.nvim_create_user_command('Task',
 )
 end
 
+function M.remove()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'Parser'.parse(line)
+    if task == nil then
+        return
+    end
+    if task.uuid == nil then
+        vim.notify('No task found')
+        return
+    end
+    TaskWarrior.delete_task(task.uuid)
+end
+
 -- Define the autocommand to trigger on saving a markdown file
 -- vim.api.nvim_create_autocmd("BufWritePost", {
 --     pattern = "*.md",     -- Only apply to markdown files
@@ -262,7 +313,7 @@ end
 function M.cmd(args)
     local subcommand = args.fargs[1]
     if not subcommand then
-        print("Usage: :Task <add|ls|context|mtwd|rm|done|import|export|index> [arguments]")
+        print("Usage: :Task <add|ls|context|mtwd|rm|done|update|update_all|index> [arguments]")
         return
     end
 
@@ -303,6 +354,10 @@ function M.cmd(args)
         end
         local task_id = tonumber(task_id_str)
         M.done(task_id)
+    elseif subcommand == 'rm' then
+        M.remove()
+    elseif subcommand == 'update' then
+        M.update()
     elseif subcommand == 'import' then
         M.import()
     elseif subcommand == 'export' then
@@ -380,10 +435,11 @@ end
 function M.select_tasks(tasks,action)
     if action == nil then
         action = function(selected)
-            for _, task in ipairs(selected) do
-                local uuid = task:match("@{(.*)}")
+            for _, raw_task in ipairs(selected) do
+                local uuid = raw_task:match("@{(.*)}")
                 if uuid then
-                    vim.api.nvim_put({task}, "l", true, true)
+                    task = TaskWarrior.get_task(uuid)
+                    M.task2line(task)
                 end
             end
         end
@@ -402,23 +458,6 @@ function M.select_tasks(tasks,action)
             ["default"] =  action,
         },
     })
-end
-
-function M.update()
-    local task = require'Parser'.parse(line)
-    if task == nil then
-        return
-    end
-    local json = require'cjson'.encode(task)
-    local out = TaskWarrior.import_task(json)
-    -- get uuid from the output
-    task.uuid = out:match('.*([0-9a-f%-]+).*')
-    -- append the uuid to the current line
-    local line = vim.api.nvim_get_current_line()
-    line = line .. ' @{' .. task.uuid .. '}'
-    -- set the new line to the buffer
-    vim.api.nvim_set_current_line(new_line)
-    vim.notify(out)
 end
 
 function M.rm(task_id)

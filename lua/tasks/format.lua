@@ -57,7 +57,14 @@ function M.tostring(task)
             end
         end
     end
-    local line = string.format('- [%s] %s %s %s %s %s', status, task.description, tags, due, mtags, file, uuid)
+
+    local uuid = task.uuid
+    if uuid == nil then
+        uuid = ''
+    else
+        uuid = string.format('@{%s}', uuid)
+    end
+    local line = string.format('- [%s] %s %s %s %s %s %s', status, task.description, tags, due, mtags, file, uuid)
     return line
 end
 
