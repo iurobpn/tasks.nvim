@@ -480,7 +480,7 @@ function M.populate_buffer(buf, tasks)
         end
         local task_lines = task.description .. tags .. ' ' .. require"dev.lua.fs".basename(task.filename) .. ':' .. task.linenr
 
-        local task_file_line = { file = task.filename, line = task.linenr, due = task.due }
+        local task_file_line = { file = task.filename, line = tonumber(task.linenr), due = task.due }
         for j = i, i + #task_lines - 1 do
             M.map_file_line[j] = task_file_line
         end
@@ -491,7 +491,7 @@ function M.populate_buffer(buf, tasks)
     -- Buffer.set_buf_links(buf,file_lines)
 
     for _, fline in ipairs(file_line) do
-        M.map_file_line[fline.buf_line] = { file = fline.file, line = fline.line, due = fline.due }
+        M.map_file_line[fline.buf_line] = { file = fline.file, line = tonumber(fline.line), due = fline.due }
     end
 
     vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>',
@@ -618,7 +618,7 @@ function M.populate_buf_timeline(buf, tasks)
     -- Buffer.set_buf_links(buf,file_lines)
 
     for _, fline in ipairs(file_line) do
-        M.map_file_line[fline.buf_line] = { file = fline.file, line = fline.line, due = fline.due }
+        M.map_file_line[fline.buf_line] = { file = fline.file, line = tonumber(fline.line), due = fline.due }
     end
 
     vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>',
@@ -659,7 +659,7 @@ end
 function M.open_link()
     local linenr = vim.fn.line('.')
     linenr = tonumber(linenr) - 1
-    local win = float.Window.get_win()
+    local win = dev.nvim.ui.float.Window.get_win()
     if win ~= nil then
         win:close()
     elseif M.vid_r ~= nil then
@@ -672,7 +672,8 @@ function M.open_link()
     vim.cmd.e(M.map_file_line[linenr].file)
     -- get current window id
     vim.cmd('normal! zR')
-    vim.api.nvim_win_set_cursor(0, { M.map_file_line[linenr].line, 0 })
+    local pos = { M.map_file_line[linenr].line, 0}
+    vim.api.nvim_win_set_cursor(0, pos )
     if win ~= nil then
         M.vid = nil
     else
@@ -880,8 +881,6 @@ M.search = function(...)
     if opts.default then
         local q = require"tasks.query".Query()
         tasks = q:select(M.default_query)
-        print('default search')
-        print('tasks: ', vim.inspect(tasks))
         -- require"utils".pprint(tasks, 'tasks in search: ')
         -- M.write_tasks(tasks, 'tasks_from_query.json')
     elseif opts.search == 'last search' then

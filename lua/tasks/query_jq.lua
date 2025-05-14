@@ -103,7 +103,6 @@ function Query.select_by_status(status)
 end
 
 function Query:select(option)
-    print('query:select')
     option = option or {}
     local cmd
     local andstr = ''
@@ -134,10 +133,7 @@ function Query:select(option)
 
         cmd = string.format("jq '%s'", query)
     end
-    print('cmd: ' .. cmd)
     local str_tasks = self:run(cmd)
-    -- print('str_tasks: ' .. str_tasks)
-    -- print('end of str_tasks')
     local tasks
     if str_tasks == '' or str_tasks == '[]' then
         tasks = {}
@@ -145,21 +141,15 @@ function Query:select(option)
         tasks = require'cjson'.decode('{ "tasks": ' .. str_tasks .. ' }')
         tasks = tasks.tasks
     end
-    print('tasks: ' .. vim.inspect(tasks))
-    print('end of query:select')
     return tasks
 end
 
 function Query:run(cmd)
-    print('query:run')
     -- table.insert(Query.hist, cmd)
     local file = self:file()
     cmd = cmd .. ' ' .. file
-    print('cmd in run: ' .. cmd)
     local strtasks = ''
     strtasks = require"tasks.util".run(cmd)
-    print('str_tasks in run(): ' .. strtasks)
-    print('end of str_tasks in run(): ')
     return strtasks
 end
 
