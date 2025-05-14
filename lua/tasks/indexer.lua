@@ -66,18 +66,6 @@ local mod = {
     Indexer = M
 }
 -- get a indexer
--- @return: a table of tasks
-function mod.get_indexer(folder, filename)
-    if filename == nil then
-        filename = mod.Indexer:get_fullpath()
-    end
-    if folder == nil then
-        folder = mod.Indexer.folder
-    end
-    return mod.Indexer(folder, filename)
-end
----
--- get a indexer
 -- @param folder str --folder with the notes
 -- @param filename str --filename of the notes
 function mod.index(folder,filename)
@@ -112,7 +100,6 @@ function mod.index_process(folder, filename)
 end
 function mod.index_thread()
     Thread = require'thread'
-    print('Indexing tasks ...')
     local thread = Thread(
         function()
             local Tasks = require'tasks'

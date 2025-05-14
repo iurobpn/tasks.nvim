@@ -9,11 +9,9 @@ local Filter = {
 -- @details
 -- - add a param to the list of params
 function Filter:add(param)
-    print("Filter:add " .. param)
     if param == nil or param == '' then
         return
     end
-    print("Filter:add " .. param .. ' added')
     table.insert(self.params, param)
 end
 
@@ -23,7 +21,6 @@ function Filter:clear()
 end
 function Filter:get_tasks()
     local filter = self:build()
-    print("Filter:get_tasks " .. filter)
     local out = require'tasks.util'.run("task " .. filter .. " export")
     return out
 end
@@ -62,21 +59,14 @@ function Filter.get_context()
     if out == "" then
         return "none", ''
     end
-    print("task context: " .. out)
     
     -- local n, m, context, filter = string.find(out, "^([a-zA-Z]+[a-zA-Z0-9-_]*)%s+read%s+([^ ]*)%s+yes *$")
     local context, filter = out:match( [[^([a-zA-Z]+[a-zA-Z0-9-_]*)%s+read%s+(+?[a-zA-Z]+[a-zA-Z0-9-_]*)%s+yes *$]])
 
-    if context ~= nil then
-        print("Context: " .. context)
-    else
-        print("Context: nil")
+    if context == nil or context == '' then
         context= "none"
     end
-    if filter ~= nil then
-        print("filtered: " .. filter)
-    else
-        print("filtered: nil")
+    if filter == nil then
         filter = ''
     end
 

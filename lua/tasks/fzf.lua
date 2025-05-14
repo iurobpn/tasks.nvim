@@ -31,6 +31,7 @@ end
 
 -- Function to feed tasks to fzf-lua grep-like search with markdown syntax highlighting
 function M.search_tasks(task_list, f_sink)
+    print("Searching tasks...")
     if not task_list or #task_list == 0 then
         vim.notify("No tasks found.")
         return

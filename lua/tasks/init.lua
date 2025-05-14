@@ -416,9 +416,6 @@ end
 function M.list(filter)
     filter = filter or ''
     local filterObj = require'tasks.filter'()
-    -- print("Filter: " .. require'inspect'.inspect(Filter))
-    -- local filterObj = Filter()
-    print("Filter obj " .. tostring(filterObj) .. ': '.. require'inspect'.inspect(filterObj))
     filterObj:add(filter)
     local raw_tasks = filterObj:get_tasks()
     local tasks = require'cjson'.decode(raw_tasks)
