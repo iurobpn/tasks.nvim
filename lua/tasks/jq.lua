@@ -217,16 +217,18 @@ function Query:select(option)
 end
 
 function Query:run(cmd)
-    table.insert(Query.hist, cmd)
     local file = self:file()
-    local str_tasks = require"utils".get_command_output(cmd .. ' ' .. file)
+    local str_tasks = require"tasks.util".run(cmd .. ' ' .. file)
+    if cmd ~= nil and type(cmd) == 'string' then
+        table.insert(M.hist, cmd)
+    end
     return str_tasks
 end
 
 M.Query = Query
 
 function Query.history()
-    require'fzf-lua'.fzf_exec(Query.hist, {
+    require'fzf-lua'.fzf_exec(M.hist, {
         prompt = 'Select a query>',
         actions = {
             ["default"] = function(selected)
@@ -241,15 +243,15 @@ end
 function Query.init()
     local Msaved = vim.g.proj.get('query_history')
     if Msaved then
-        Query.hist = Msaved
+        M.hist = Msaved
     else
-        Query.hist = {}
+        M.hist = {}
     end
-    vim.g.proj.register('query_history', Query.hist)
+    vim.g.proj.register('query_history', M.hist)
 end
 
 require"class"
-Query = class(Query,{constructor = Query.new})
+Query = _G.class(Query,{constructor = Query.new})
 
 -- create a keymap to open the query history
 if not (vim == nil) and not (vim.api.nvim_set_keymap == nil)then
