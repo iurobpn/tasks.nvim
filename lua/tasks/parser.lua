@@ -8,7 +8,7 @@ local M = {
         tag = '(#[a-zA-Z_%-]+)',
         parameter = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
         metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'}, -- a specific metatag
-        uuid='@{[a-zA-Z0-9%-]+}',
+        uuid='@{([a-zA-Z0-9%-]+)}',
     },
 
     fields = {
@@ -18,7 +18,7 @@ local M = {
         },
         uuid        = {
             type = 'hex',
-            pattern = '@{[a-zA-Z0-9%-]+}',
+            pattern = '@{([a-zA-Z0-9%-]+)}',
         },
         entry       = {
             type = 'date',
@@ -124,9 +124,9 @@ end
 
 function M.parse(task)
     local status_map = {
-        ["[x]"] = "done",
-        ["[v]"] = "in progress",
-        ["[ ]"] = "not started"
+        ["[x]"] = "completed",
+        ["[v]"] = "working",
+        ["[ ]"] = "pending"
     }
 
     -- Extract the status and remove it from the task string
@@ -138,6 +138,7 @@ function M.parse(task)
     status = '[' .. status .. ']'
 
     status = status_map[status] or "not started yet"
+    print('status: ' .. status)
 
     local parameters = {}
 
@@ -158,7 +159,7 @@ function M.parse(task)
         k = k + 1
     end
 
-    if filename == nil or line_number == nil or description == nil then
+    if description == nil then
         print('Could not parse task: ' .. task)
         return
     end
@@ -173,6 +174,8 @@ function M.parse(task)
     for k, v in pairs(parameters) do
         task_t[k] = v
     end
+
+    print('task_t ' .. vim.inspect(task_t))
 
     return task_t
 end

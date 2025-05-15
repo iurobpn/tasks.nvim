@@ -118,17 +118,25 @@ local TaskWarrior = {
 }
 local prefix = ''
 if TaskWarrior.debug then
-    prefix = 'TASKDATA=/tmp/.task; '
+    prefix = '' --'TASKDATA=/tmp/.task; '
 
 end
 
 --- @brief Get a taskwarrior task
 --- @param uuid string
 --- @return table task
-function get_task(uuid)
-    local json = require'util'.run(prefix .. "task " .. uuid .. " export")
-    local data = require'cjson'.decode(json)
+function TaskWarrior.get_task(uuid)
+    if uuid == nil or uuid == '' then
+        print('get_task: uuid is nil or empty')
+        return nil
+    end
 
+    local cmd = prefix .. "task " .. uuid .. " export"
+    local json = require'tasks.util'.run(prefix .. "task " .. uuid .. " export")
+    local data = require'cjson'.decode(json)
+    if #data > 0 then
+        data = data[1]
+    end
     return data
 end
 --- @brief Import a taskwarrior json file
@@ -140,11 +148,26 @@ function TaskWarrior.import_file(filename)
 end
 
 --- @brief Import a taskwarrior json tasks string
---- @param task table
+--- @param json string
 --- @return table uuids
-function TaskWarrior.import(task)
-    local uuids =  require'util'.run(prefix .. "echo '" .. task .. "' | task import ")
+function TaskWarrior.import(json)
+    local uuids =  require'tasks.util'.run(prefix .. "echo '" .. json .. "' | task import ")
     return TaskWarrior.get_uuids(uuids) -- uuids are strings
+end
+
+--- @brief set a task into a taskwarrior db
+--- @param task table
+--- @return string uuid
+function TaskWarrior.set_task(task)
+    local str_task = ''
+    if type(task) == 'table' then
+        str_task = require'cjson'.encode(task.data)
+    else
+        str_task = task
+    end
+    local uuids = TaskWarrior.import(str_task)
+
+    return uuids[1] or ''
 end
 
 --- from the output of an import command, recover the uuids to update the tasks
@@ -159,6 +182,9 @@ function TaskWarrior.get_uuids(import_out)
             table.insert(uuids, id)
         end
     end
+    -- print('get_uuids: str: ', import_out)
+    -- print('get_uuids: uuids: ', vim.inspect(uuids))
+
     return uuids
 end
 

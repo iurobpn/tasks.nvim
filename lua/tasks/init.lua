@@ -40,6 +40,9 @@ local M = {
         'due',
         'scheduled',
         'tags',
+        'priority',
+        'start',
+        'recur'
     }
 }
 
@@ -87,25 +90,36 @@ function M:add_workspace(name, folder)
     self.ws[name] = Workspace(name, folder)
 end
 
-function M:task2line(task)
-    local line = require'format'.tostring(task)
-    -- put task as a line pasted with p after a yy
-    vim.api.nvim_paste({line}, false, -1)
+function M.task2line(task)
+    local new_line = require'tasks.format'.tostring(task)
+    local linenr = vim.api.nvim_win_get_cursor(0)[1]
+    print('task line: ' .. new_line )
+    vim.api.nvim_buf_set_lines(0, linenr, linenr, true, {new_line})
 
     return line
 end
 
+local function hash2plus(tags)
+    if tags == nil or tags == {} then
+        return {}
+    end
+    for i,_ in ipairs(tags) do
+        tags[i] = tags[i]:gsub('#', '')
+    end
+    return tags
+end
+
 function M:update()
     local line = vim.api.nvim_get_current_line()
-    local task = require'Parser'.parse(line)
+    local task = require'tasks.parser'.parse(line)
     if task == nil then
         return
     end
     if task.uuid == nil then
-        M:add()
-        return
+        return M:add()
     end
     local old_task = TaskWarrior.get_task(task.uuid)
+    -- print('old task: ', vim.inspect(old_task))
     if old_task == nil then
         vim.notify('Task not found')
         return
@@ -115,9 +129,18 @@ function M:update()
             old_task[k] = v
         end
     end
-    local json = require'cjson'.encode(old_task)
+    old_task.tags = hash2plus(old_task.tags)
+    local new_uuid = TaskWarrior.set_task(old_task)
+    print('new uuid: ', new_uuid)
+    -- print('old uuid: ', old_task.uuid)
+    local new_task = TaskWarrior.get_task(old_task.uuid)
+    if new_task == nil then
+        vim.notify('Task not found')
+        return ''
+    end
+    M.task2line(new_task)
 
-    return TaskWarrior.import_task(json)
+    return new_task.uuid
 end
 
 -- make recurrent tasks done and add completion date

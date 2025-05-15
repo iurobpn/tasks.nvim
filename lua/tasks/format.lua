@@ -22,22 +22,34 @@ end
 
 ---convert a task to a string
 ---@param task table
+---@param fields table
 ---@return string
-function M.tostring(task)
-    local nonmtags = {
-        'description',
-        'status',
-        'due',
-        'tags',
-        'filename',
-        'line_number',
-    }
+function M.tostring(task, fields)
+    if fields == nil then
+        fields = {
+            'description',
+            'status',
+            'due',
+            'tags',
+            'filename',
+            'linenr',
+        }
+    else
+        if not tbl.contains(fields,'filename') then
+            table.insert(fields, 'filename')
+        end
+        if not tbl.contains(fields,'linenr') then
+            table.insert(fields, 'linenr')
+        end
+    end
+
     local status
-    if task.status == 'not started' then
+    print('task status; ' .. task.status)
+    if task.status == 'pending' then
         status = ' '
-    elseif task.status == 'in progress' then
+    elseif task.status == 'working' then
         status = '.'
-    elseif task.status == 'done' then
+    elseif task.status == 'completed' then
         status = 'x'
     end
 
@@ -45,14 +57,22 @@ function M.tostring(task)
     if task.due ~= nil then
         due = string.format('[%s:: %s]', 'due', task.due)
     end
-    local tags = table.concat(task.tags,' ')
-    local file = '| ' .. task.filename .. ':' .. task.line_number
 
-    local utils = require'utils'
+    local tags = ''
+    if task.tags ~= nil then
+        tags = '#' .. table.concat(task.tags,' #')
+    end
+
+    local file = ''
+    if task.filename ~= nil and task.linenr ~= nil then
+        file = '| ' .. task.filename .. ':' .. task.linenr
+    end
+
+    local tbl = require'utils.tbl'
     local mtags = ''
     if task then
         for k,v in pairs(task) do
-            if not utils.contains(nonmtags,k) then
+            if tbl.contains(fields,k) then
                 mtags = mtags .. string.format(' [%s:: %s]', k, v)
             end
         end
@@ -65,6 +85,7 @@ function M.tostring(task)
         uuid = string.format('@{%s}', uuid)
     end
     local line = string.format('- [%s] %s %s %s %s %s %s', status, task.description, tags, due, mtags, file, uuid)
+
     return line
 end
 
