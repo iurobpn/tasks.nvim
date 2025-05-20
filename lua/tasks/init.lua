@@ -92,11 +92,9 @@ end
 
 function M.task2line(task)
     local new_line = require'tasks.format'.tostring(task)
-    local linenr = vim.api.nvim_win_get_cursor(0)[1]
-    print('task line: ' .. new_line )
-    vim.api.nvim_buf_set_lines(0, linenr, linenr, true, {new_line})
+    vim.api.nvim_set_current_line(new_line)
 
-    return line
+    return new_line
 end
 
 local function hash2plus(tags)
@@ -109,14 +107,15 @@ local function hash2plus(tags)
     return tags
 end
 
-function M:update()
+function M.update()
     local line = vim.api.nvim_get_current_line()
     local task = require'tasks.parser'.parse(line)
     if task == nil then
         return
     end
     if task.uuid == nil then
-        return M:add()
+        vim.notify('No task in current line')
+        return
     end
     local old_task = TaskWarrior.get_task(task.uuid)
     -- print('old task: ', vim.inspect(old_task))
@@ -124,23 +123,45 @@ function M:update()
         vim.notify('Task not found')
         return
     end
+    M.task2line(old_task)
+
+    return old_task.uuid
+end
+--- export current task to taskwarrior
+function M.export()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'tasks.parser'.parse(line)
+    if task == nil then
+        return
+    end
+    if task.uuid == nil then
+        vim.notify('No task in current line')
+        return
+    end
+    local old_task = TaskWarrior.get_task(task.uuid)
+    -- print('old task: ', vim.inspect(old_task))
+    if old_task == nil then
+        vim.notify('Task not found')
+        return
+    end
+
+    -- replace the old_task values with the corrected ones in task
     for k, v in pairs(task) do
-        if old_task[k] ~= nil then
+        if k ~= 'uuid' then
             old_task[k] = v
         end
     end
-    old_task.tags = hash2plus(old_task.tags)
-    local new_uuid = TaskWarrior.set_task(old_task)
-    print('new uuid: ', new_uuid)
-    -- print('old uuid: ', old_task.uuid)
-    local new_task = TaskWarrior.get_task(old_task.uuid)
-    if new_task == nil then
-        vim.notify('Task not found')
-        return ''
-    end
-    M.task2line(new_task)
 
-    return new_task.uuid
+    M.task2line(old_task)
+
+    return old_task.uuid
+end
+--- complete the current task
+function M.complete_task()
+    -- get the uuid from the line
+    local uuid = M.get_task_uuid()
+    TaskWarrior.complete_task(uuid)
+    M.update()
 end
 
 -- make recurrent tasks done and add completion date
@@ -290,7 +311,7 @@ end
 function M.complete(arg_lead, cmd_line, cursor_pos)
     -- { 'add', 'ls', 'rm', 'done', 'import', 'export', 'index', 'context' }
     -- These are the valid completions for the command
-    local options = { "ls", "context", "add", "rm", "done", "import", "export", "mtwd", "parse" }
+    local options = { "ls", "context", "add", "rm", "done", "import",  "update", "export", "parse" }
     -- Return all options that start with the current argument lead
     return vim.tbl_filter(function(option)
         return vim.startswith(option, arg_lead)
@@ -347,18 +368,22 @@ function M.cmd(args)
 
     if subcommand == 'add' then
         if nargs == '' then
-            print("Usage: :Task add <description>")
-            return
+            local line = vim.api.nvim_get_current_line()
+            local task = require'tasks.parser'.parse(line)
+            if task == nil then
+                print("Usage: :Task add <description>")
+            else
+                M.add(task);
+            end
+        else
+            M.add(nargs)
         end
-        M.add(nargs)
     elseif subcommand == 'context' then
         if nargs == '' then
             print('context: ' .. TaskWarrior._context)
         else
             M.context(nargs)
         end
-    elseif subcommand == 'mtwd' then
-        require'm_taskwarrior_d'.setup()
     elseif subcommand == 'ls' then
         M.list(nargs)
     elseif subcommand == 'rm' then
@@ -411,17 +436,29 @@ function M.add(raw_task)
     if raw_task ==nil or raw_task == '' then
         raw_task = vim.cmd('input("add a task:")')
     end
+
     -- local current_line = vim.api.nvim_get_current_line()
     --
     -- local task = require'parser'.parse(raw_task)
     local task = {}
     if raw_task ~= '' then
         local out = TaskWarrior.add_task(raw_task)
-        vim.notify(out)
-        local id = out:match('.*([0-9]+).')
-        out = TaskWarrior.run('task ' .. id .. ' export')
+        local id = out[1]:match('([0-9a-f]+%-[0-9a-f%-]+).')
+        if not id then
+            print('Error: ' .. out)
+            return
+        end
+        out = require'tasks.util'.run('task ' .. id .. ' export')
+        print('out ' .. out)
         task = require'cjson'.decode(out)
+        task = task[1]
         M.tasks[task.uuid] = task
+        -- append uuid at the end of the current line
+        local current_line = vim.api.nvim_get_current_line()
+        local new_line = current_line .. ' @{' .. task.uuid .. '}'
+        vim.api.nvim_set_current_line(new_line)
+        -- print('task: ' .. require'inspect'.inspect(task))
+        M.update()
     end
 
     return task

@@ -183,9 +183,10 @@ function TaskWarrior.start_task(task)
 end
 
 --- @brief add a new task
---- @param task string jsonified task
+--- @param task table jsonified task
 function TaskWarrior.add_task(task)
-    return TaskWarrior.import(task)
+    json = require'cjson'.encode(task)
+    return TaskWarrior.import(json)
 end
 
 --- @brief Run a command on the task

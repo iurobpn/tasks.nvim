@@ -59,7 +59,7 @@ function M.tostring(task, fields)
     end
 
     local tags = ''
-    if task.tags ~= nil then
+    if task.tags ~= nil and next(task.tags) ~= nil then
         tags = '#' .. table.concat(task.tags,' #')
     end
 

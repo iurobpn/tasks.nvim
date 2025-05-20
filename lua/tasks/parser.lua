@@ -83,7 +83,6 @@ function M.parse(task)
 
     local task_t = {}
     task_t.status = status_map[status] or "pending"
-    
 
     for item, patterns in pairs(M.patterns) do
         if item ~= 'param' and item ~= 'tag' and item ~= "status" then
@@ -91,6 +90,7 @@ function M.parse(task)
                 local it = task:match(pattern)
                 if it then
                     task_t[item] = it
+                    task = task:gsub(pattern, '')
                 else
                     -- print('Task: ' .. task .. ' does not match pattern: ' .. pattern)
                 end
@@ -119,7 +119,7 @@ function M.parse(task)
         task_t.description = task_t.description:match('^%s*(.*)%s*$')
     end
 
-    print('task_t ' .. vim.inspect(task_t))
+    -- print('task_t ' .. vim.inspect(--[[ta --]]sk_t))
 
     return task_t
 end
