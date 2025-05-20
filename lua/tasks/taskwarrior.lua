@@ -13,106 +13,70 @@
 -- - it uses the util module to run commands and read files
 
     -- date = '%d%d%d%d%-[0-1]%d%-[0-3]%d%]',
-local p = {
-    name = '[a-zA-Z0-9_%-]+',
-    date = '[%d- ]+',
-    hex = '%[0-9a-fA-F]+',
-    uuid = '@{[a-fA-F0-9]+-[a-dA-F0-9]+-[a-dA-F0-9]+-[a-dA-F0-9]+}',
-
-            -- pattern = {
-            --     '%[due:: %d%d%d%d%-[0-1]%d%-[0-3]%d%]',
-            --     '%[due:: %d%d%d%d%-[0-1]%d%-[0-3]%d% %d%d:%d%d%]',
-            --     'due:%d%d%d%d%-[0-1]%d%-[0-3]%d',
-            --     'due'
-            -- },
-}
 local TaskWarrior = {
     _context = 'none',
     debug=true,
+
     fields = {
         status      = {
             type = 'string',
-            pattern = '%- %s*%[%s*([xv ])%s*%]',
         },
         uuid        = {
             type = 'UUID',
-            pattern = '@{' .. p.uuid .. '}',
         },
         entry       = {
             type = 'date',
-            pattern = 'entry:' .. p.date,
         },
         description = {
             type = 'string',
-            pattern = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
         },
         start       = {
             type = 'date',
-            pattern = 'start:' .. p.date,
         },
         due         = {
             type = 'date',
-            pattern = '[due:: ' .. p.date .. ']',
         },
         wait        = {
             type = 'date',
-            pattern = 'start:' .. p.date,
         },
         modified    = {
             type = 'date',
-            pattern = 'modified:' .. p.date,
         },
         scheduled   = {
             type = 'date',
-            pattern = 'scheduled:' .. p.date,
         },
         recur       = {
             type = 'string',
-            pattern = 'recur:%w+',
         },
         mask        = {
             type = 'string',
-            pattern = '',
         },
         imask       = {
             type = 'integer',
-            pattern = '',
         },
         parent      = {
             type = 'UUID',
-            pattern = '',
         },
         project     = {
             type = 'string',
-            pattern = 'project:' .. p.name,
         },
         priority    = {
             type = 'string',
-            pattern = 'priority:[HLM]',
         },
         depends     = {
             type = 'string',
-            pattern = ''
         },
         tags        = {
             type = 'string',
-            pattern = '(#[a-zA-Z_%-]+)',
         },
         annotation  = {
             type = 'string',
-            pattern = '',
         },
         filename    = {
             type = 'string',
-            pattern = '',
         },
         line_number = {
             type = 'string',
-            pattern = ':(%d+):',
-        },
-        parameter   = {
-            type = 'string',
-            pattern = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
         },
     },
 }

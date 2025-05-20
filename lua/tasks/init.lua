@@ -290,7 +290,7 @@ end
 function M.complete(arg_lead, cmd_line, cursor_pos)
     -- { 'add', 'ls', 'rm', 'done', 'import', 'export', 'index', 'context' }
     -- These are the valid completions for the command
-    local options = { "ls", "context", "add", "rm", "done", "update", "update_all" }
+    local options = { "ls", "context", "add", "rm", "done", "import", "export", "mtwd", "parse" }
     -- Return all options that start with the current argument lead
     return vim.tbl_filter(function(option)
         return vim.startswith(option, arg_lead)
@@ -387,6 +387,20 @@ function M.cmd(args)
         M.export()
     elseif subcommand == 'index' then
         M.index()
+    elseif subcommand == 'parse' then
+        -- get current line
+        local line = vim.api.nvim_get_current_line()
+        -- parse the line
+        local task = M.parser.parse(line)
+        -- check if the task is nil
+        if task == nil then
+            print('No task found')
+            return
+        end
+        -- print the task
+        print('Task: ' .. require'inspect'.inspect(task))
+        local uuid = M.parser.get_uuid(line)
+        print('UUID: ' .. uuid)
     else
         print("Invalid Task command. Usage: :Task <new|list|del|done|add|import|export> [arguments]")
     end
