@@ -143,10 +143,10 @@ function M.format_file_line(tasks)
     end
     local out = {}
     for _, task in pairs(tasks) do
-        if task.line_number == nil then
-            error('task.line_number is nil')
+        if task.linenr == nil then
+            error('task.linenr is nil')
         end
-        table.insert(out, string.format('%s:%d:', task.filename, task.line_number))
+        table.insert(out, string.format('%s:%d:', task.filename, task.linenr))
     end
 
     return out
@@ -156,12 +156,12 @@ function M.format_tasks_short(tasks)
     local tasks_qf = {}
     local format = require"tasks.format"
     for _, task in pairs(tasks) do
-        if task.line_number == nil then
-            error('task.line_number is nil')
+        if task.linenr == nil then
+            error('task.linenr is nil')
         end
         table.insert(tasks_qf, {
             filename = task.filename,
-            lnum = task.line_number,
+            lnum = task.linenr,
             text = (task.description or '') ..
                 ' ' .. format.params_to_string(task.parameters) ..
                 ' ' .. format.tags_to_string(task.tags)
@@ -185,8 +185,8 @@ function M.format_timeline(tasks_in)
     local i = 0
     local format = require"tasks.format"
     for _, task in pairs(tasks_in) do
-        if task.line_number == nil then
-            error('task.line_number is nil')
+        if task.linenr == nil then
+            error('task.linenr is nil')
         end
         if last_due ~= task.due then
             if not first then
@@ -217,7 +217,7 @@ function M.format_timeline(tasks_in)
 
         table.insert(tasks, glyphs.circle .. ' ' .. format.toshortstring(task))
         i = i + 1
-        table.insert(file_line, { file = task.filename, line = task.line_number, buf_line = i, due = task.due })
+        table.insert(file_line, { file = task.filename, line = task.linenr, buf_line = i, due = task.due })
         i = i + 1
     end
 
@@ -233,11 +233,11 @@ function M.format_tasks(tasks_in)
     end
     local format = require"tasks.format"
     for _, task in pairs(tasks_in) do
-        if task.line_number == nil then
-            error('task.line_number is nil')
+        if task.linenr == nil then
+            error('task.linenr is nil')
         end
         table.insert(tasks, format.tostring(task))
-        table.insert(file_line, { file = task.filename, line = task.line_number })
+        table.insert(file_line, { file = task.filename, line = task.linenr })
     end
 
     return tasks, file_line
@@ -445,8 +445,8 @@ function M.populate_buffer(buf, tasks)
     local last_due = ''
     local i = 0
     for _, task in pairs(tasks) do
-        if task.line_number == nil then
-            error('task.line_number is nil')
+        if task.linenr == nil then
+            error('task.linenr is nil')
         end
         if last_due ~= task.due then
             if not first then
@@ -478,20 +478,20 @@ function M.populate_buffer(buf, tasks)
         if tasks.tags ~= nil then
             tags = table.concat(task.tags, ' ')
         end
-        local task_lines = task.description .. tags .. ' ' .. require"dev.lua.fs".basename(task.filename) .. ':' .. task.line_number
+        local task_lines = task.description .. tags .. ' ' .. require"dev.lua.fs".basename(task.filename) .. ':' .. task.linenr
 
-        local task_file_line = { file = task.filename, line = task.line_number, due = task.due }
+        local task_file_line = { file = task.filename, line = tonumber(task.linenr), due = task.due }
         for j = i, i + #task_lines - 1 do
             M.map_file_line[j] = task_file_line
         end
-        table.insert(file_line, { file = task.filename, line = task.line_number, buf_line = i, due = task.due })
+        table.insert(file_line, { file = task.filename, line = task.linenr, buf_line = i, due = task.due })
         i = i + #task_lines
     end
 
     -- Buffer.set_buf_links(buf,file_lines)
 
     for _, fline in ipairs(file_line) do
-        M.map_file_line[fline.buf_line] = { file = fline.file, line = fline.line, due = fline.due }
+        M.map_file_line[fline.buf_line] = { file = fline.file, line = tonumber(fline.line), due = fline.due }
     end
 
     vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>',
@@ -545,9 +545,9 @@ function M.populate_buf_timeline(buf, tasks)
     local glyphs = require('git-icons')
     local grp = grp_ontime
     for _, task in pairs(tasks) do
-        if task.line_number == nil then
+        if task.linenr == nil then
             -- require"utils".pprint(task, 'Task (linenr is nil): ')
-            error('task.line_number is nil')
+            error('task.linenr is nil')
         end
         if task.due ~= nil and last_due ~= task.due then
             if not first then
@@ -594,7 +594,7 @@ function M.populate_buf_timeline(buf, tasks)
             local tags = M.split_lines(table.concat(task.tags, ' '), ' ')
             require"list".extend(task_lines, tags)
         end
-        table.insert(task_lines, ' ' .. require"dev.lua.fs".basename(task.filename) .. ':' .. task.line_number)
+        table.insert(task_lines, ' ' .. require"utils.fs".basename(task.filename) .. ':' .. task.linenr)
 
         local glyphss = { glyphs.circle }
         for _ = 2, #task_lines do
@@ -606,19 +606,19 @@ function M.populate_buf_timeline(buf, tasks)
             table.insert(groups, grp)
         end
 
-        local task_file_line = { file = task.filename, line = task.line_number, due = task.due }
+        local task_file_line = { file = task.filename, line = task.linenr, due = task.due }
         for j = i, i + #task_lines - 1 do
             M.map_file_line[j] = task_file_line
         end
         M.add_virtual_line(i, buf, ns_id, task_lines, glyphss, groups)
-        table.insert(file_line, { file = task.filename, line = task.line_number, buf_line = i, due = task.due })
+        table.insert(file_line, { file = task.filename, line = task.linenr, buf_line = i, due = task.due })
         i = i + #task_lines
     end
 
     -- Buffer.set_buf_links(buf,file_lines)
 
     for _, fline in ipairs(file_line) do
-        M.map_file_line[fline.buf_line] = { file = fline.file, line = fline.line, due = fline.due }
+        M.map_file_line[fline.buf_line] = { file = fline.file, line = tonumber(fline.line), due = fline.due }
     end
 
     vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>',
@@ -659,7 +659,7 @@ end
 function M.open_link()
     local linenr = vim.fn.line('.')
     linenr = tonumber(linenr) - 1
-    local win = float.Window.get_win()
+    local win = dev.nvim.ui.float.Window.get_win()
     if win ~= nil then
         win:close()
     elseif M.vid_r ~= nil then
@@ -672,7 +672,8 @@ function M.open_link()
     vim.cmd.e(M.map_file_line[linenr].file)
     -- get current window id
     vim.cmd('normal! zR')
-    vim.api.nvim_win_set_cursor(0, { M.map_file_line[linenr].line, 0 })
+    local pos = { M.map_file_line[linenr].line, 0}
+    vim.api.nvim_win_set_cursor(0, pos )
     if win ~= nil then
         M.vid = nil
     else
@@ -693,7 +694,7 @@ M.config_win = function()
 end
 
 function M.open_right(buf, _)
-    ui.views.open_fixed_right(buf)
+    dev.nvim.ui.views.open_fixed_right(buf)
     M.set_hl()
     M.config_win()
     vim.cmd('setlocal nowrap')
@@ -880,7 +881,6 @@ M.search = function(...)
     if opts.default then
         local q = require"tasks.query".Query()
         tasks = q:select(M.default_query)
-        print('default search')
         -- require"utils".pprint(tasks, 'tasks in search: ')
         -- M.write_tasks(tasks, 'tasks_from_query.json')
     elseif opts.search == 'last search' then

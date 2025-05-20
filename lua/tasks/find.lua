@@ -19,6 +19,6 @@ function M.find_tasks(folder, ...)
         cmd = cmd .. ' | grep ' .. opts.args
     end
 
-    return require'utils'.get_command_output(cmd)
+    return require'tasks.util'.run(cmd)
 end
 return M

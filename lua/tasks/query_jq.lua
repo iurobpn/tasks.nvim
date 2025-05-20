@@ -6,7 +6,7 @@ local M = {
 local Query = {}
 
 -- static variables
-Query.path = '/home/gagarin/git/pkm'
+Query.path = '/home/gagarin/git/my/home/pkm'
 Query.jsonfiles = {
     tasks = {
         filename = 'tasks.json',
@@ -135,21 +135,22 @@ function Query:select(option)
     end
     local str_tasks = self:run(cmd)
     local tasks
-    if str_tasks == '' then
+    if str_tasks == '' or str_tasks == '[]' then
         tasks = {}
     else
-        tasks = vim.fn.json_decode(str_tasks)
+        tasks = require'cjson'.decode('{ "tasks": ' .. str_tasks .. ' }')
+        tasks = tasks.tasks
     end
-
     return tasks
 end
 
 function Query:run(cmd)
-    table.insert(Query.hist, cmd)
+    -- table.insert(Query.hist, cmd)
     local file = self:file()
-    -- print('cmd: ' .. cmd)
-    local str_tasks = require"utils".get_command_output(cmd .. ' ' .. file)
-    return str_tasks
+    cmd = cmd .. ' ' .. file
+    local strtasks = ''
+    strtasks = require"tasks.util".run(cmd)
+    return strtasks
 end
 
 M.Query = Query
