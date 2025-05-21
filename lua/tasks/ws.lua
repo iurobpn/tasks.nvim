@@ -18,10 +18,11 @@ function M.get_filename(self)
     return table.concat({self.folder, self.dbpath, self.file}, '/')
 end
 require'class'
-M = class(M, {constructor = function(self, name, folder)
-    self.folder = folder
-    self.name = name
-    return self
+M = _G.class(M, {constructor = function(name, folder)
+    obj = {}
+    obj.folder = folder
+    obj.name = name
+    return obj
 end})
 
 return M

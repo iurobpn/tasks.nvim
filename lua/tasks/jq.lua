@@ -92,10 +92,11 @@ Query.jsonfiles = {
 Query.current = Query.tasks
 --constructor
 function Query:new(filename)
+    local obj = {}
     if filename ~= nil then
-        self.filename = filename
+        obj.filename = filename
     end
-    return self
+    return obj
 end
 
 -- confusing, all of this to select a file and path?

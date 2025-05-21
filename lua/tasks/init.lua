@@ -11,7 +11,6 @@ local M = {
     workspace = require'tasks.ws',
     fzf = require'tasks.fzf',
 
-
     backend = 'jq',
     query = require('tasks.jq'),
 
@@ -45,8 +44,6 @@ local M = {
         'recur'
     }
 }
-
-
 
 M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
 -- M.query = require('tasks.' .. M.backend)
@@ -270,8 +267,11 @@ if vim ~= nil and vim.api.nvim_set_keymap ~= nil then
 end
 
 require"class"
-M = _G.class(M, { constructor = function(self, folder, filename)
-    self:set_workspace(folder, filename)
+M = _G.class(M, { constructor = function(folder, filename)
+    local obj = {}
+    obj:set_workspace(folder, filename)
+
+    return obj
 end
 })
 
@@ -423,6 +423,7 @@ function M.cmd(args)
             return
         end
         -- print the task
+        dev.nvim.ui.float()
         print('Task: ' .. require'inspect'.inspect(task))
         local uuid = M.parser.get_uuid(line)
         print('UUID: ' .. uuid)

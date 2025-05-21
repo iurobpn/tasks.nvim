@@ -76,9 +76,10 @@ end
 
 require'class'
 Filter = _G.class(Filter, { 
-    constructor = function(self)
-        self.params = {}
-        return self
+    constructor = function()
+        return {
+            params = {},
+        }
     end
 })
 

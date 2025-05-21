@@ -127,14 +127,15 @@ function mod.index_thread()
 end
 
 require"class"
-M = _G.class(M, {constructor = function(self, folder, filename)
+M = _G.class(M, {constructor = function(folder, filename)
+    local obj = {}
     if folder ~= nil then
-        self.folder = folder
+        obj.folder = folder
     end
     if filename ~= nil then
-        self.filename = filename
+        obj.filename = filename
     end
-    return self
+    return obj
 end}
 )
 

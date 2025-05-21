@@ -7,13 +7,14 @@ local Query = {
     sql = nil,
 }
 
-Query = class(Query, {constructor = function(self, filename)
+Query = class(Query, {constructor = function(filename)
+    local obj = {}
     if filename ~= nil then
-        self.filename = filename
+        obj.filename = filename
     end
     local sql = require('dev.lua.sqlite2')
-    self.sql = sql.Sql(self.path .. self.filename)
-    return self
+    obj.sql = sql.Sql(obj.path .. obj.filename)
+    return obj
 end})
 
 function Query:select_by_id(id)

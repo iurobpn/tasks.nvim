@@ -84,9 +84,10 @@ function M:write(raw_tasks)
     self.sql:close()
 end
 
-class(M, {constructor = function(self, filename)
+_G.class(M, {constructor = function(filename)
+    local obj = {}
     if filename ~= nil then
-        self.filename = filename
+        obj.filename = filename
     end
-    self.sql = require('dev.lua.sqlite').Sql(self.filename)
+    obj.sql = require('dev.lua.sqlite').Sql(obj.filename)
 end})
