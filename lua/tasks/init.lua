@@ -44,6 +44,8 @@ local M = {
         'recur'
     }
 }
+-- local date_pattern = '(%d%d%d%d%-?%d%d%-?%d%d)([T ]?%d%d:%d%d:%d%d)?'
+local date_pattern = '[%dT :%-]+'
 
 M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
 -- M.query = require('tasks.' .. M.backend)
@@ -134,6 +136,7 @@ function M.parse()
     end
     M.info(vim.inspect(task))
 end
+
 function M.info(content)
     if content == nil then
         vim.notify('tasks.info content is nil')
@@ -172,9 +175,8 @@ function M.info(content)
     vim.api.nvim_create_autocmd("CursorMoved", {
         callback = function()
             if M.infowin ~= nil then
-                local cursor = vim.api.nvim_win_get_cursor(0)
-                local row = cursor[1]
-                if initial_row ~= row then
+                local current_row = vim.api.nvim_win_get_cursor(0)[1]
+                if initial_row ~= current_row then
                     -- close the window
                     M.infowin:close()
                     M.infowin = nil
@@ -271,29 +273,51 @@ function M.recurrent_done()
 
         vim.notify('Task is recurring every month')
     end
-    --
-    line = string.gsub(line, '(%- %[.?%])', '- [x]')
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    local line_number = cursor[1]
+
+    line = M.toggle_status(line)
+    if line:match('%- %[x%]') then
+        line = line .. ' [end:: ' .. os.date('%Y-%m-%dT%H:%M:%S') .. ']'
+    elseif line:match('%- %[ %]') then
+        line = string.gsub(line, '(%s*%[end:: +' .. date_pattern .. '%]%s*)', '')
+    else
+        vim.notify('task has no status')
+    end
+
     -- write the new line to the buffer
-    vim.api.nvim_set_current_line(line .. ' [completion:: ' .. os.date('%Y-%m-%d %H:%M:%S') .. ']')
+    vim.api.nvim_set_current_line(line)
+
     if line_next then
         if line_number > -1 then
             line_number = line_number - 1
         end
         line_next = string.gsub(line_next, '(%- %[.?%])', '- [ ]')
-        vim.api.nvim_buf_set_lines(0, line_number, line_number, false, {line_next})
+        vim.api.nvim_put({line_next}, 'l', true, false)
     end
     -- set the cursor back to the original line
     vim.api.nvim_win_set_cursor(0, cursor_orig)
-    vim.notify('Task marked as done')
 
     return true
 end
 
+function M.toggle_status(line)
+    if line == nil then
+        line = vim.api.nvim_get_current_line()
+    end
+    if line:match('%- %[x%]') then
+        line = string.gsub(line, '(%- %[x%])', '- [ ]')
+    elseif line:match('%- %[%s+%]') then
+        line = string.gsub(line, '(%- %[%s+%])', '- [x]')
+    else
+        vim.notify('task has no status')
+    end
+    return line
+end
 
-function M.check_completion()
-    local line = vim.api.nvim_get_current_line()
+function M.check_completion(line)
+    if line == nil then
+        line = vim.api.nvim_get_current_line()
+    end
+
     if string.match(line, '%- %[x%]') then
         M.insert_completed_tag()
     end
@@ -301,8 +325,8 @@ end
 
 function M.insert_completed_tag()
     local line = vim.api.nvim_get_current_line()
-    if not string.match(line, '%[completion:: .*%]') then
-        vim.api.nvim_set_current_line(line .. ' [completion:: ' .. os.date('%Y-%m-%d %H:%M:%S') .. ']')
+    if not string.match(line, '%[end:: [0-9T %-]+%]') then
+        vim.api.nvim_set_current_line(line .. ' [end:: ' .. os.date('%Y-%m-%dT%H:%M:%S') .. ']')
         vim.notify('Task marked as done')
     end
 end

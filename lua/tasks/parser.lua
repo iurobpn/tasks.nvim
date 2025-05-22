@@ -90,13 +90,10 @@ function M.parse(task)
                 local it = task:match(pattern)
                 if it then
                     task_t[item] = it
-                else
-                    -- print('Task: ' .. task .. ' does not match pattern: ' .. pattern)
                 end
             end
         end
     end
-
 
     task_t.tags = {}
     for _,pattern in ipairs(M.patterns.tag) do
@@ -111,12 +108,12 @@ function M.parse(task)
             task_t.description = task_t.description:gsub('%s*' .. pattern .. '%s*', '')
         end
     end
-    task_t.description = task_t.description:gsub('%s+$', '')
 
     if task_t.description == nil then
         print('Task has no description ' .. task)
     else
-        task_t.description = task_t.description:match('^%s*(.*)%s*$')
+        task_t.description = task_t.description:gsub('%s+$', '')
+        task_t.description = task_t.description:gsub('^%s+', '')
     end
 
     return task_t
