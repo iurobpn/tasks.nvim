@@ -124,6 +124,67 @@ function M.update()
 
     return old_task.uuid
 end
+
+function M.parse()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'tasks.parser'.parse(line)
+    if task == nil then
+        print('No task found')
+        return
+    end
+    M.info(vim.inspect(task))
+end
+function M.info(content)
+    if content == nil then
+        vim.notify('tasks.info content is nil')
+        return
+    end
+    local win = dev.nvim.ui.float.Window()
+    win.content = content
+    lines = require'utils'.split(content,'\n')
+    local num_lines = #lines
+    -- get current cursor position
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row = cursor[1] - num_lines - 1
+    local col = cursor[2] + 5
+    if row < 1 then
+        row = 1
+    end
+    win.position = {
+    absolute = {
+            row = row,
+            col = col,
+        }
+    }
+    if win.option.buffer ~= nil then
+        win.option.buffer = {}
+    end
+    win.option.buffer.buflisted = false
+    win.option.buffer.modifiable = false
+
+    win:open()
+    win:fit()
+    vim.cmd("wincmd w")
+
+    M.infowin = win
+    local initial_row = cursor[1]
+    -- an autocommand to close window if the cursor change line number
+    vim.api.nvim_create_autocmd("CursorMoved", {
+        callback = function()
+            if M.infowin ~= nil then
+                local cursor = vim.api.nvim_win_get_cursor(0)
+                local row = cursor[1]
+                if initial_row ~= row then
+                    -- close the window
+                    M.infowin:close()
+                    M.infowin = nil
+                end
+            end
+        end,
+        group = vim.api.nvim_create_augroup("TaskInfo", { clear = true }),
+        buffer = win.bufnr,
+    })
+end
 --- export current task to taskwarrior
 function M.export()
     local line = vim.api.nvim_get_current_line()
@@ -153,6 +214,21 @@ function M.export()
 
     return old_task.uuid
 end
+
+function M.taskinfo()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'tasks.parser'.parse(line)
+    if task == nil then
+        return
+    end
+    if task.uuid == nil then
+        vim.notify('No task in current line')
+        return
+    end
+    local old_task = TaskWarrior.get_task(task.uuid)
+    M.info(vim.inspect(old_task))
+end
+
 --- complete the current task
 function M.complete_task()
     -- get the uuid from the line
@@ -309,22 +385,20 @@ end
 --- indexing current workspace   -------------------
 
 function M.complete(arg_lead, cmd_line, cursor_pos)
-    -- { 'add', 'ls', 'rm', 'done', 'import', 'export', 'index', 'context' }
-    -- These are the valid completions for the command
-    local options = { "ls", "context", "add", "rm", "done", "import",  "update", "export", "parse" }
-    -- Return all options that start with the current argument lead
+    local options = { "ls", "context", "add", "rm", "done", "update",  "update_all", "index", "info", "export", "parse" }
+
     return vim.tbl_filter(function(option)
         return vim.startswith(option, arg_lead)
     end, options)
 end
 
 if vim ~= nil and vim.api.nvim_create_user_command ~= nil then
--- Add a command to run index function
+
 vim.api.nvim_create_user_command('Task',
         function(args)
             M.cmd(args)
         end,
-        {--<add|ls|context|rm|done|import|export|index>
+        {
             nargs = '*',
             complete = M.complete,
             desc = 'Task management command'
@@ -355,9 +429,10 @@ end
 
 -- Task command handler
 function M.cmd(args)
+    local usage = "Usage: :Task <add|ls|context|rm|done|update|update_all|index|info|parse> [arguments]"
     local subcommand = args.fargs[1]
     if not subcommand then
-        print("Usage: :Task <add|ls|context|mtwd|rm|done|update|update_all|index> [arguments]")
+        vim.notify(usage)
         return
     end
 
@@ -406,29 +481,16 @@ function M.cmd(args)
         M.remove()
     elseif subcommand == 'update' then
         M.update()
-    elseif subcommand == 'import' then
-        M.import()
     elseif subcommand == 'export' then
         M.export()
+    elseif subcommand == 'info' then
+        M.taskinfo()
     elseif subcommand == 'index' then
         M.index()
     elseif subcommand == 'parse' then
-        -- get current line
-        local line = vim.api.nvim_get_current_line()
-        -- parse the line
-        local task = M.parser.parse(line)
-        -- check if the task is nil
-        if task == nil then
-            print('No task found')
-            return
-        end
-        -- print the task
-        dev.nvim.ui.float()
-        print('Task: ' .. require'inspect'.inspect(task))
-        local uuid = M.parser.get_uuid(line)
-        print('UUID: ' .. uuid)
+        M.parse()
     else
-        print("Invalid Task command. Usage: :Task <new|list|del|done|add|import|export> [arguments]")
+        print("Invalid Task command. " .. usage)
     end
 end
 
@@ -449,10 +511,7 @@ function M.add(raw_task)
             print('Error: ' .. out)
             return
         end
-        out = require'tasks.util'.run('task ' .. id .. ' export')
-        print('out ' .. out)
-        task = require'cjson'.decode(out)
-        task = task[1]
+        task = TaskWarrior.get_task(id)
         M.tasks[task.uuid] = task
         -- append uuid at the end of the current line
         local current_line = vim.api.nvim_get_current_line()

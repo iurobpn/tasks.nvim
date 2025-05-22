@@ -21,7 +21,7 @@ function Filter:clear()
 end
 function Filter:get_tasks()
     local filter = self:build()
-    local out = require'tasks.util'.run("task " .. filter .. " export")
+    local out = require'tasks.util'.run(TaskWarrior.prefix .. "task " .. filter .. " export")
     return out
 end
 

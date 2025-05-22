@@ -16,6 +16,7 @@
 local TaskWarrior = {
     _context = 'none',
     debug=true,
+    prefix = '',
 
     fields = {
         status      = {
@@ -80,10 +81,32 @@ local TaskWarrior = {
         },
     },
 }
-local prefix = ''
-if TaskWarrior.debug then
-    prefix = '' --'TASKDATA=/tmp/.task; '
 
+TW = TaskWarrior
+function TaskWarrior.mkdebug()
+    if TW.debug then
+        TW.prefix = 'TASKRC=/home/user/.taskrc; '
+    end
+end
+function TaskWarrior.rmdebug()
+    if TW.debug then
+        TW.prefix = 'TASKRC=/home/user/.taskrc; '
+    end
+end
+if TaskWarrior.debug then
+    TW.prefix = 'export TASKDATA=/tmp/.task; '
+end
+
+--- @brief Run a command on the task
+--- @param cmd string
+--- @param uuid string
+--- @param ... string
+--- @return string output
+function TaskWarrior.run_cmd(cmd, uuid, ...)
+    local args = ... or ''
+    cmd = TW.prefix .. "task " .. uuid .. " " .. cmd .. " " .. args
+    local out = require'util'.run(cmd)
+    return out
 end
 
 --- @brief Get a taskwarrior task
@@ -95,19 +118,20 @@ function TaskWarrior.get_task(uuid)
         return nil
     end
 
-    local cmd = prefix .. "task " .. uuid .. " export"
-    local json = require'tasks.util'.run(prefix .. "task " .. uuid .. " export")
+    local cmd = TW.prefix .. "task " .. uuid .. " export"
+    local json = require'tasks.util'.run(cmd)
     local data = require'cjson'.decode(json)
     if #data > 0 then
         data = data[1]
     end
     return data
 end
+
 --- @brief Import a taskwarrior json file
 --- @param filename string
 --- @return table uuids
 function TaskWarrior.import_file(filename)
-    local str_uuids =  require'util'.run(prefix .. "task import " .. filename)
+    local str_uuids =  require'util'.run(TW.prefix .. "task import " .. filename)
     return TaskWarrior.get_uuids(str_uuids)
 end
 
@@ -115,8 +139,20 @@ end
 --- @param json string
 --- @return table uuids
 function TaskWarrior.import(json)
-    local uuids =  require'tasks.util'.run(prefix .. "echo '" .. json .. "' | task import ")
+    local uuids =  require'tasks.util'.run(TW.prefix .. "echo '" .. json .. "' | task import ")
     return TaskWarrior.get_uuids(uuids) -- uuids are strings
+end
+
+-- @brief set or get the current context
+-- @param context string
+-- @return string cmd output
+function TaskWarrior.context(context)
+    if context == nil then
+        context = ''
+    end
+    TaskWarrior._context = context
+
+    return require'tasks.util'.run(TW.prefix .. "task context " .. context)
 end
 
 --- @brief set a task into a taskwarrior db
@@ -189,17 +225,6 @@ function TaskWarrior.add_task(task)
     return TaskWarrior.import(json)
 end
 
---- @brief Run a command on the task
---- @param cmd string
---- @param uuid string
---- @param ... string
---- @return string output
-function TaskWarrior.run_cmd(cmd, uuid, ...)
-    local args = ... or ''
-    cmd = prefix .. "task " .. uuid .. " " .. cmd .. " " .. args
-    local out = require'util'.run(cmd)
-    return out
-end
 
 
 --- @brief stop a task
@@ -233,17 +258,6 @@ function TaskWarrior.denotate_task(task, annotation)
     return TaskWarrior.run_cmd('denotate', task.data.uuid, annotation)
 end
 
--- @brief set or get the current context
--- @param context string
--- @return string cmd output
-function TaskWarrior.context(context)
-    if context == nil then
-        context = ''
-    end
-    TaskWarrior._context = context
-
-    return require'tasks.util'.run("task context " .. context)
-end
 
 
 --- @brief sync the taskwarrior database with the server

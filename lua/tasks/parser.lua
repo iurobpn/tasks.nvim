@@ -90,7 +90,6 @@ function M.parse(task)
                 local it = task:match(pattern)
                 if it then
                     task_t[item] = it
-                    task = task:gsub(pattern, '')
                 else
                     -- print('Task: ' .. task .. ' does not match pattern: ' .. pattern)
                 end
@@ -118,8 +117,6 @@ function M.parse(task)
     else
         task_t.description = task_t.description:match('^%s*(.*)%s*$')
     end
-
-    -- print('task_t ' .. vim.inspect(--[[ta --]]sk_t))
 
     return task_t
 end
