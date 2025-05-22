@@ -637,6 +637,84 @@ function M.done(task_id)
     TaskWarrior.task_done(task_id)
 end
 
+-- Generate a UUID (simple implementation for demonstration)
+local function generate_uuid()
+  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+  return string.gsub(template, '[xy]', function(c)
+    local v = (c == 'x') and math.random(0, 15) or math.random(8, 11)
+    return string.format('%x', v)
+  end)
+end
+
+function M.is_valid(task)
+    return task ~= nil and not vim.tbl_isempty(task) and task.uuid ~= nil and task.uuid ~= ''
+end
+-- TODO check and debug this function
+-- Main function to process the current line and build task hierarchy
+function M.process_task_hierarchy()
+    local current_line = vim.api.nvim_get_current_line()
+    local current_task = require'tasks.parser'.parse(current_line)
+
+    -- Check if current line is a task
+    if not M.is_valid(current_task) then
+        vim.notify("Current line is not a task", vim.log.levels.WARN)
+        return nil
+    end
+
+    local current_indent = string.match(current_line, '^%s*') or ''
+    local indent_level = #current_indent
+    local parent_task = nil
+
+    -- Get current line number (0-based in Neovim API)
+    local current_linenum = vim.api.nvim_win_get_cursor(0)[1] - 1
+
+    -- Search upwards for parent task
+    if indent_level > 0 then
+        for i = current_linenum - 1, 0, -1 do
+            local line = vim.api.nvim_buf_get_lines(0, i, i + 1, false)[1]
+            local task = require'tasks.parser'.parse(line)
+
+            if M.is_valid(task) then
+                local task_indent = string.match(line, '^%s*') or ''
+                local task_indent_level = #task_indent
+
+                if task_indent_level < indent_level then
+                    -- Found parent task
+                    parent_task = task
+
+                    -- Initialize depends table if not exists
+                    parent_task.depends = parent_task.depends or {}
+
+                    -- Add current task's UUID to parent's depends if not already there
+                    if not vim.tbl_contains(parent_task.depends, current_task.uuid) then
+                        table.insert(parent_task.depends, current_task.uuid)
+                    end
+
+                    -- Now look for parent's parent (recursive hierarchy)
+                    local parent_line_indent = string.match(line, '^%s*') or ''
+                    if #parent_line_indent > 0 then
+                        -- Temporarily move cursor to parent line to find its parent
+                        local prev_cursor = vim.api.nvim_win_get_cursor(0)
+                        vim.api.nvim_win_set_cursor(0, {i + 1, 0})
+                        M.process_task_hierarchy() -- Recursively process parent
+                        vim.api.nvim_win_set_cursor(0, prev_cursor)
+                    end
+
+                    break
+                elseif task_indent_level >= indent_level then
+                    -- Task at same or deeper indentation level, keep searching
+                end
+            end
+        end
+    end
+
+    -- Return the task hierarchy information
+    return {
+        task = current_task,
+        parent = parent_task
+    }
+end
+
 _G.tasks = M
 
 return M
