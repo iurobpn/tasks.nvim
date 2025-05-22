@@ -21,13 +21,13 @@ local M = {
         },
         param = {
             '%[([%a_]+)%s*::%s*([%w:%s%-]*)%]',
-            '%[([%a_]+):([%w:%-]*)%]',
+            '([%a_]+):([%w:%-]+)',
         },
         tag = {
-            '([#+]%w[%w%d/_%-]*)',
+            '[#+](%w[%w%d/_%-]*)',
         },
         description = {
-            '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
+            '%-%s*%[%s*[a-z ]%s*%]%s*(.*)%s+',
         },
         filename = {
             '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
@@ -108,9 +108,10 @@ function M.parse(task)
     for _, pattern in ipairs(M.patterns.param) do
         for param, value in task:gmatch(pattern) do
             task_t[param] = value
-            task_t.description = task_t.description:gsub(pattern .. '%s*', '')
+            task_t.description = task_t.description:gsub('%s*' .. pattern .. '%s*', '')
         end
     end
+    task_t.description = task_t.description:gsub('%s+$', '')
 
     if task_t.description == nil then
         print('Task has no description ' .. task)
