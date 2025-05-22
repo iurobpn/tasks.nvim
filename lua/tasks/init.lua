@@ -91,7 +91,6 @@ end
 
 function M.task2line(task)
     local new_line = require'tasks.format'.tostring(task)
-    vim.api.nvim_set_current_line(new_line)
 
     return new_line
 end
@@ -122,7 +121,8 @@ function M.update()
         vim.notify('Task not found')
         return
     end
-    M.task2line(old_task)
+    line = M.task2line(old_task)
+    vim.api.nvim_set_current_line(line)
 
     return old_task.uuid
 end
@@ -212,7 +212,8 @@ function M.export()
         end
     end
 
-    M.task2line(old_task)
+    line = M.task2line(old_task)
+    vim.api.nvim_set_current_line(line)
 
     return old_task.uuid
 end
@@ -591,10 +592,15 @@ function M.select_tasks(tasks,action)
     if action == nil then
         action = function(selected)
             for _, raw_task in ipairs(selected) do
+                vim.notify('Selected task: ' .. raw_task)
                 local uuid = raw_task:match("@{(.*)}")
                 if uuid then
+                    print('UUID: ' .. uuid)
                     task = TaskWarrior.get_task(uuid)
-                    M.task2line(task)
+                    local line = M.task2line(task)
+                    vim.api.nvim_put({line}, 'l', true, false)
+                else
+                    print('No task found with uuid ' .. uuid)
                 end
             end
         end
@@ -606,7 +612,7 @@ function M.select_tasks(tasks,action)
             ["--layout"] = "reverse",
             ["--info"] = "inline",
             ["--multi"] = true,
-            ["--preview"] = "task $(echo {} | sed 's/\\(.*\\)@{\\(.*\\)}/\\2/')",
+            ["--preview"] = TaskWarrior.prefix .. "task $(echo {} | sed 's/\\(.*\\)@{\\(.*\\)}/\\2/')",
             -- ["--preview"] = "echo {} | cut -d' ' -f3- | task show",
         },
         actions = {
