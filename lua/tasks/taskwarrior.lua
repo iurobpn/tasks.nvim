@@ -15,7 +15,7 @@
     -- date = '%d%d%d%d%-[0-1]%d%-[0-3]%d%]',
 local TaskWarrior = {
     _context = 'none',
-    debug=true,
+    debug = false,
     prefix = '',
 
     fields = {

@@ -357,6 +357,13 @@ function Task.ls(filter)
     M.select_tasks(str_tasks)
 end
 
+function Task.debug()
+    TaskWarrior.debug = true
+end
+function Task.nodebug()
+    TaskWarrior.debug = false
+end
+
 -- make recurrent tasks done and add completion date
 function M.recurrent_done()
     local cursor_orig = vim.api.nvim_win_get_cursor(0)
