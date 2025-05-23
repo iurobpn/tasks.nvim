@@ -1,15 +1,5 @@
 #!/usr/local/bin/lua
 local M = {
-    -- pattern = {
-    --     status = '%- %s*%[%s*([xv ])%s*%]',
-    --     filename = '[/]?[a-zA-ZçÇãõóéá]+.*%.md',
-    --     line_number = ':(%d+):',
-    --     description = '%-%s*%[%s*[a-z ]%s*%]%s*(.*)',
-    --     tag = '(#[a-zA-Z_%-]+)',
-    --     parameter = '%[([a-zA-Z_]+)%s*::%s*([a-zA-Z0-9:%s%-]*)%]',
-    --     metatag = {'%[', '%s*::%s*([a-zA-Z0-9:%- ]*)%]'}, -- a specific metatag
-    --     uuid='@{[a-zA-Z0-9%-]+}',
-    -- },
     patterns = {
         uuid = {
             '@{(%x+%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x+)}',

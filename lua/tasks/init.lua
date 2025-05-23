@@ -1,20 +1,13 @@
 TaskWarrior = require'tasks.taskwarrior'
 local Workspace = require 'tasks.ws'
+
 local M = {
     folder = os.getenv("HOME") .. '/git/my/home/pkm/',
     current_ws='pkm',
     ws = {},
-    indexer = require'tasks.indexer',
-    parser = require'tasks.parser',
-    views = require'tasks.views',
-    find = require'tasks.find',
-    workspace = require'tasks.ws',
-    fzf = require'tasks.fzf',
 
     backend = 'jq',
-    query = require('tasks.jq'),
 
-    -- Indexer = require('tasks.indexer').Indexer,
     tasks = {
         json = nil,
         tab = nil,
@@ -44,100 +37,30 @@ local M = {
         'recur'
     }
 }
--- local date_pattern = '(%d%d%d%d%-?%d%d%-?%d%d)([T ]?%d%d:%d%d:%d%d)?'
-local date_pattern = '[%dT :%-]+'
 
-M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
--- M.query = require('tasks.' .. M.backend)
-
---- Toggle the plugin by calling the `enable`/`disable` methods respectively.
-function M.toggle()
-    local main = require("tasks.main")
-    local config = require("tasks.config")
-    if M.config == nil then
-        M.config = config.options
-    end
-
-    main.toggle("public_api_toggle")
-end
-
---- Initializes the plugin, sets event listeners and internal state.
-function M.enable(scope)
-    local main = require("tasks.main")
-    local config = require("tasks.config")
-    if M.config == nil then
-        M.config = config.options
-    end
-
-    main.toggle(scope or "public_api_enable")
-end
-
---- Disables the plugin, clear highlight groups and autocmds, closes side buffers and resets the internal state.
-function M.disable()
-    local main = require("tasks.main")
-    main.toggle("public_api_disable")
-end
-
--- setup tasks options and merge them with user provided ones.
-function M.setup(opts)
-    local config = require("tasks.config")
-    M.config = config.setup(opts)
-end
-
-
-function M:add_workspace(name, folder)
-    self.ws[name] = Workspace(name, folder)
-end
-
-function M.task2line(task)
-    local new_line = require'tasks.format'.tostring(task)
-
-    return new_line
-end
-
-local function hash2plus(tags)
-    if tags == nil or tags == {} then
-        return {}
-    end
-    for i,_ in ipairs(tags) do
-        tags[i] = tags[i]:gsub('#', '')
-    end
-    return tags
-end
-
-function M.update()
+local function get_uuid()
+    -- get current line from buffer
     local line = vim.api.nvim_get_current_line()
-    local task = require'tasks.parser'.parse(line)
-    if task == nil then
-        return
+    local uuid = line:match("@{(.*)}")
+    if uuid == nil then
+        return nil
     end
-    if task.uuid == nil then
-        vim.notify('No task in current line')
-        return
-    end
-    local old_task = TaskWarrior.get_task(task.uuid)
-    -- print('old task: ', vim.inspect(old_task))
-    if old_task == nil then
-        vim.notify('Task not found')
-        return
-    end
-    line = M.task2line(old_task)
-    vim.api.nvim_set_current_line(line)
-
-    return old_task.uuid
+    return uuid
 end
-
-function M.parse()
-    local line = vim.api.nvim_get_current_line()
-    local task = require'tasks.parser'.parse(line)
-    if task == nil then
-        print('No task found')
-        return
+local function toggle_status(line)
+    if line == nil then
+        line = vim.api.nvim_get_current_line()
     end
-    M.info(vim.inspect(task))
+    if line:match('%- %[x%]') then
+        line = string.gsub(line, '(%- %[x%])', '- [ ]')
+    elseif line:match('%- %[%s+%]') then
+        line = string.gsub(line, '(%- %[%s+%])', '- [x]')
+    else
+        vim.notify('task has no status')
+    end
+    return line
 end
-
-function M.info(content)
+local function show(content)
     if content == nil then
         vim.notify('tasks.info content is nil')
         return
@@ -187,8 +110,66 @@ function M.info(content)
         buffer = win.bufnr,
     })
 end
---- export current task to taskwarrior
-function M.export()
+
+local function is_valid_raw(task)
+    return task ~= nil and not vim.tbl_isempty(task)
+end
+local function is_valid(task)
+    return task ~= nil and not vim.tbl_isempty(task) and task.uuid ~= nil and task.uuid ~= ''
+end
+-- local date_pattern = '(%d%d%d%d%-?%d%d%-?%d%d)([T ]?%d%d:%d%d:%d%d)?'
+local date_pattern = '[%dT :%-]+'
+
+M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
+-- M.query = require('tasks.' .. M.backend)
+
+--- Toggle the plugin by calling the `enable`/`disable` methods respectively.
+function M.toggle()
+    local main = require("tasks.main")
+    local config = require("tasks.config")
+    if M.config == nil then
+        M.config = config.options
+    end
+
+    main.toggle("public_api_toggle")
+end
+
+--- Initializes the plugin, sets event listeners and internal state.
+function M.enable(scope)
+    local main = require("tasks.main")
+    local config = require("tasks.config")
+    if M.config == nil then
+        M.config = config.options
+    end
+
+    main.toggle(scope or "public_api_enable")
+end
+
+--- Disables the plugin, clear highlight groups and autocmds, closes side buffers and resets the internal state.
+function M.disable()
+    local main = require("tasks.main")
+    main.toggle("public_api_disable")
+end
+
+-- setup tasks options and merge them with user provided ones.
+function M.setup(opts)
+    local config = require("tasks.config")
+    M.config = config.setup(opts)
+end
+
+
+function M:add_workspace(name, folder)
+    self.ws[name] = Workspace(name, folder)
+end
+
+local function task2line(task)
+    local new_line = require'tasks.format'.tostring(task)
+
+    return new_line
+end
+
+local Task = {}
+function Task.update()
     local line = vim.api.nvim_get_current_line()
     local task = require'tasks.parser'.parse(line)
     if task == nil then
@@ -199,7 +180,37 @@ function M.export()
         return
     end
     local old_task = TaskWarrior.get_task(task.uuid)
-    -- print('old task: ', vim.inspect(old_task))
+    if old_task == nil then
+        vim.notify('Task not found')
+        return
+    end
+    line = task2line(old_task)
+    vim.api.nvim_set_current_line(line)
+
+    return old_task.uuid
+end
+function Task.parse()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'tasks.parser'.parse(line)
+    if task == nil then
+        print('No task found')
+        return
+    end
+    show(vim.inspect(task))
+end
+
+--- export current task to taskwarrior
+function Task.export()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'tasks.parser'.parse(line)
+    if task == nil then
+        return
+    end
+    if task.uuid == nil then
+        vim.notify('No task in current line')
+        return
+    end
+    local old_task = TaskWarrior.get_task(task.uuid)
     if old_task == nil then
         vim.notify('Task not found')
         return
@@ -212,13 +223,13 @@ function M.export()
         end
     end
 
-    line = M.task2line(old_task)
+    line = task2line(old_task)
     vim.api.nvim_set_current_line(line)
 
     return old_task.uuid
 end
 
-function M.taskinfo()
+function Task.info()
     local line = vim.api.nvim_get_current_line()
     local task = require'tasks.parser'.parse(line)
     if task == nil then
@@ -229,15 +240,106 @@ function M.taskinfo()
         return
     end
     local old_task = TaskWarrior.get_task(task.uuid)
-    M.info(vim.inspect(old_task))
+    show(vim.inspect(old_task))
 end
 
 --- complete the current task
-function M.complete_task()
+function Task.done()
     -- get the uuid from the line
-    local uuid = M.get_task_uuid()
-    TaskWarrior.complete_task(uuid)
-    M.update()
+    local uuid = get_uuid()
+    if uuid == nil or uuid == '' then
+        vim.notify('No task in current line')
+        return
+    end
+    M.done({uuid=uuid})
+    Task.update()
+end
+--- indexing current workspace   -------------------
+function Task.index()
+    local indexer = M.indexer
+    local ws = M.ws[M.current_ws]
+    if ws == nil then
+        print('No workspace found')
+        return
+    end
+    if ws.folder == nil then
+        print('No folder found')
+        return
+    end
+    indexer.index(ws.folder)
+end
+--- indexing current workspace   -------------------
+function Task.delete()
+    local line = vim.api.nvim_get_current_line()
+    local task = require'tasks.parser'.parse(line)
+    if task == nil then
+        vim.notify('task is nil')
+        return
+    end
+    if task.uuid == nil then
+        vim.notify('No task found')
+        return
+    end
+    TaskWarrior.delete_task(task)
+end
+-- Task management functions
+function Task.add(raw_task)
+    if raw_task ==nil or raw_task == '' then
+        local line = vim.api.nvim_get_current_line()
+        raw_task = require'tasks.parser'.parse(line)
+        if not is_valid_raw(raw_task) then
+            raw_task = vim.cmd('call input("add a task:")')
+            Task.add(raw_task)
+            return
+        end
+    end
+
+    -- local current_line = vim.api.nvim_get_current_line()
+    --
+    -- local task = require'parser'.parse(raw_task)
+    local task = {}
+    local out = TaskWarrior.add_task(raw_task)
+    local uuid = out[1]:match('([0-9a-f]+%-[0-9a-f%-]+).')
+    if not uuid then
+        print('Error: ' .. out)
+        return
+    end
+    task = TaskWarrior.get_task(uuid)
+    -- M.tasks[task.uuid] = task
+    -- append uuid at the end of the current line
+    local current_line = vim.api.nvim_get_current_line()
+    local new_line = current_line .. ' @{' .. task.uuid .. '}'
+    vim.api.nvim_set_current_line(new_line)
+    Task.update()
+
+    return task
+end
+
+function Task.context(str)
+    if str == nil or str == "" then
+        M.context = "none"
+    else
+        M.context = str
+        TaskWarrior.context(str)
+    end
+end
+-- fetch tasks from tawk warrior with a giver filter
+-- @param filter string
+-- @return table
+function Task.ls(filter)
+    filter = filter or ''
+    local filterObj = require'tasks.filter'()
+    filterObj:add(filter)
+    local raw_tasks = filterObj:get_tasks()
+    local tasks = require'cjson'.decode(raw_tasks)
+    local str_tasks = {}
+    if type(tasks[1]) == 'table' then
+        for _, task in ipairs(tasks) do
+            table.insert(str_tasks, "- [ ] " .. task.description .. " @{" .. task.uuid .. "}")
+        end
+    end
+
+    M.select_tasks(str_tasks)
 end
 
 -- make recurrent tasks done and add completion date
@@ -245,14 +347,14 @@ function M.recurrent_done()
     local cursor_orig = vim.api.nvim_win_get_cursor(0)
     -- get current line from buffer
     local line = vim.api.nvim_get_current_line()
-    local is_recurring = M.parser.get_param_value(line, 'repeat')
+    local is_recurring = require'tasks.parser'.get_param_value(line, 'repeat')
     if not is_recurring then
         vim.notify('Task is not recurring')
         return false
     end
     local line_next
     if is_recurring == 'every month' then
-        local due_date = M.parser.get_param_value(line, 'due')
+        local due_date = require'tasks.parser'.get_param_value(line, 'due')
         if not due_date then
             vim.notify('Task is not due')
             return false
@@ -275,7 +377,7 @@ function M.recurrent_done()
         vim.notify('Task is recurring every month')
     end
 
-    line = M.toggle_status(line)
+    line = toggle_status(line)
     if line:match('%- %[x%]') then
         line = line .. ' [end:: ' .. os.date('%Y-%m-%dT%H:%M:%S') .. ']'
     elseif line:match('%- %[ %]') then
@@ -299,41 +401,6 @@ function M.recurrent_done()
 
     return true
 end
-
-function M.toggle_status(line)
-    if line == nil then
-        line = vim.api.nvim_get_current_line()
-    end
-    if line:match('%- %[x%]') then
-        line = string.gsub(line, '(%- %[x%])', '- [ ]')
-    elseif line:match('%- %[%s+%]') then
-        line = string.gsub(line, '(%- %[%s+%])', '- [x]')
-    else
-        vim.notify('task has no status')
-    end
-    return line
-end
-
-function M.check_completion(line)
-    if line == nil then
-        line = vim.api.nvim_get_current_line()
-    end
-
-    if string.match(line, '%- %[x%]') then
-        M.insert_completed_tag()
-    end
-end
-
-function M.insert_completed_tag()
-    local line = vim.api.nvim_get_current_line()
-    if not string.match(line, '%[end:: [0-9T %-]+%]') then
-        vim.api.nvim_set_current_line(line .. ' [end:: ' .. os.date('%Y-%m-%dT%H:%M:%S') .. ']')
-        vim.notify('Task marked as done')
-    end
-end
-
-
-
 
 -- Helper function to get today's date in "YYYY-MM-DD" format
 local function get_current_date()
@@ -359,13 +426,11 @@ local function run_tasks_index_once_per_day()
 end
 
 -- Autocommand to run on VimEnter
-if vim ~= nil and vim.api.nvim_set_keymap ~= nil then
-    vim.api.nvim_create_autocmd("VimEnter", {
-        callback = function()
-            run_tasks_index_once_per_day()
-        end,
-    })
-end
+vim.api.nvim_create_autocmd("VimEnter", {
+    callback = function()
+        run_tasks_index_once_per_day()
+    end,
+})
 
 require"class"
 M = _G.class(M, { constructor = function(folder, filename)
@@ -376,73 +441,27 @@ M = _G.class(M, { constructor = function(folder, filename)
 end
 })
 
-M.get_filename = function()
-    local ws = M.ws[M.current_ws]
-    if ws == nil then
-        print('No workspace found')
-        return
-    end
-    if ws.folder == nil then
-        print('No folder found')
-        return
-    end
-    return ws:get_filename()
-end
-
---- indexing current workspace   -------------------
-function M.get_indexer(folder,filename)
-    return require('tasks.indexer').get_indexer(folder, filename)
-end
-
-M.index = function()
-    local indexer = M.indexer
-    local ws = M.ws[M.current_ws]
-    if ws == nil then
-        print('No workspace found')
-        return
-    end
-    if ws.folder == nil then
-        print('No folder found')
-        return
-    end
-    indexer.index(ws.folder)
-end
---- indexing current workspace   -------------------
-
 function M.complete(arg_lead, cmd_line, cursor_pos)
-    local options = { "ls", "context", "add", "rm", "done", "update",  "update_all", "index", "info", "export", "parse" }
-
+    local options = {}
+    for k, _ in pairs(Task) do
+        table.insert(options, k)
+    end
     return vim.tbl_filter(function(option)
         return vim.startswith(option, arg_lead)
     end, options)
 end
 
-if vim ~= nil and vim.api.nvim_create_user_command ~= nil then
-
 vim.api.nvim_create_user_command('Task',
-        function(args)
-            M.cmd(args)
-        end,
-        {
-            nargs = '*',
-            complete = M.complete,
-            desc = 'Task management command'
-        }
+    function(args)
+        M.cmd(args)
+    end,
+    {
+        nargs = '*',
+        complete = M.complete,
+        desc = 'Task management command'
+    }
 )
-end
 
-function M.remove()
-    local line = vim.api.nvim_get_current_line()
-    local task = require'Parser'.parse(line)
-    if task == nil then
-        return
-    end
-    if task.uuid == nil then
-        vim.notify('No task found')
-        return
-    end
-    TaskWarrior.delete_task(task.uuid)
-end
 
 -- Define the autocommand to trigger on saving a markdown file
 -- vim.api.nvim_create_autocmd("BufWritePost", {
@@ -454,7 +473,7 @@ end
 
 -- Task command handler
 function M.cmd(args)
-    local usage = "Usage: :Task <add|ls|context|rm|done|update|update_all|index|info|parse> [arguments]"
+    local usage = "Usage: :Task <add|ls|context|delete|done|update|update_all|index|info|parse> [arguments]"
     local subcommand = args.fargs[1]
     if not subcommand then
         vim.notify(usage)
@@ -466,138 +485,21 @@ function M.cmd(args)
         nargs = table.concat(args.fargs, " ", 2)
     end
 
-    if subcommand == 'add' then
-        if nargs == '' then
-            local line = vim.api.nvim_get_current_line()
-            local task = require'tasks.parser'.parse(line)
-            if task == nil then
-                print("Usage: :Task add <description>")
-            else
-                M.add(task);
-            end
-        else
-            M.add(nargs)
-        end
-    elseif subcommand == 'context' then
-        if nargs == '' then
-            print('context: ' .. TaskWarrior._context)
-        else
-            M.context(nargs)
-        end
-    elseif subcommand == 'ls' then
-        M.list(nargs)
-    elseif subcommand == 'rm' then
-        local task_id_str = args.fargs[2]
-        if task_id_str == nil then
-            print("Usage: :Task rm <task_id>")
-            return
-        end
-        local task_id = tonumber(task_id_str)
-        M.rm(task_id)
-    elseif subcommand == 'done' then
-        local task_id_str = args.fargs[2]
-        if task_id_str == nil then
-            print("Usage: :Task done <task_id>")
-            return
-        end
-        local task_id = tonumber(task_id_str)
-        M.done(task_id)
-    elseif subcommand == 'rm' then
-        M.remove()
-    elseif subcommand == 'update' then
-        M.update()
-    elseif subcommand == 'export' then
-        M.export()
-    elseif subcommand == 'info' then
-        M.taskinfo()
-    elseif subcommand == 'index' then
-        M.index()
-    elseif subcommand == 'parse' then
-        M.parse()
+    if Task[subcommand] ~= nil  and type(Task[subcommand]) == 'function' then
+        Task[subcommand](nargs)
     else
         print("Invalid Task command. " .. usage)
     end
-end
-
--- Task management functions
-function M.add(raw_task)
-    if raw_task ==nil or raw_task == '' then
-        raw_task = vim.cmd('input("add a task:")')
-    end
-
-    -- local current_line = vim.api.nvim_get_current_line()
-    --
-    -- local task = require'parser'.parse(raw_task)
-    local task = {}
-    if raw_task ~= '' then
-        local out = TaskWarrior.add_task(raw_task)
-        local id = out[1]:match('([0-9a-f]+%-[0-9a-f%-]+).')
-        if not id then
-            print('Error: ' .. out)
-            return
-        end
-        task = TaskWarrior.get_task(id)
-        M.tasks[task.uuid] = task
-        -- append uuid at the end of the current line
-        local current_line = vim.api.nvim_get_current_line()
-        local new_line = current_line .. ' @{' .. task.uuid .. '}'
-        vim.api.nvim_set_current_line(new_line)
-        -- print('task: ' .. require'inspect'.inspect(task))
-        M.update()
-    end
-
-    return task
-end
-
-function M.context(str)
-    if str == nil or str == "" then
-        M.context = "none"
-    else
-        M.context = str
-        TaskWarrior.context(str)
-    end
-end
-
-
-function M.get_task_uuid()
-    -- get current line from buffer
-    local line = vim.api.nvim_get_current_line()
-    local uuid = line:match("@{(.*)}")
-    if uuid == nil then
-        return nil
-    end
-    return uuid
-end
-
--- fetch tasks from tawk warrior with a giver filter
--- @param filter string
--- @return table
-function M.list(filter)
-    filter = filter or ''
-    local filterObj = require'tasks.filter'()
-    filterObj:add(filter)
-    local raw_tasks = filterObj:get_tasks()
-    local tasks = require'cjson'.decode(raw_tasks)
-    local str_tasks = {}
-    if type(tasks[1]) == 'table' then
-        for _, task in ipairs(tasks) do
-            table.insert(str_tasks, "- [ ] " .. task.description .. " @{" .. task.uuid .. "}")
-        end
-    end
-
-    M.select_tasks(str_tasks)
 end
 
 function M.select_tasks(tasks,action)
     if action == nil then
         action = function(selected)
             for _, raw_task in ipairs(selected) do
-                vim.notify('Selected task: ' .. raw_task)
                 local uuid = raw_task:match("@{(.*)}")
                 if uuid then
-                    print('UUID: ' .. uuid)
                     task = TaskWarrior.get_task(uuid)
-                    local line = M.task2line(task)
+                    local line = task2line(task)
                     vim.api.nvim_put({line}, 'l', true, false)
                 else
                     print('No task found with uuid ' .. uuid)
@@ -621,34 +523,23 @@ function M.select_tasks(tasks,action)
     })
 end
 
-function M.rm(task_id)
-    TaskWarrior.delete_task(task_id)
-    -- parse current line
-    -- get uuid
-    -- check if the uuid and/or description represent oine task in TW
-    -- launch tasks.rm(task(uuid)
-    -- fetch whole task from TW
-    -- show task to the user
-    -- ask if he is sure he wants to delete via vim.ui.input
-    -- delete if he is sure via util.run('yes | task delete uuid')
+function M.delete(task_id)
+    -- get current line from buffer
+    local line = vim.api.nvim_get_current_line()
+
+    local task = require'tasks.parser'.parse(line)
+    local out = TaskWarrior.delete(task.uuid)
+    
+    if out == nil or out == '' then
+        vim.notify('Error deleting task')
+        return
+    end
 end
 
-function M.done(task_id)
-    TaskWarrior.task_done(task_id)
+function M.done(task)
+    TaskWarrior.complete_task(task)
 end
 
--- Generate a UUID (simple implementation for demonstration)
-local function generate_uuid()
-  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-  return string.gsub(template, '[xy]', function(c)
-    local v = (c == 'x') and math.random(0, 15) or math.random(8, 11)
-    return string.format('%x', v)
-  end)
-end
-
-function M.is_valid(task)
-    return task ~= nil and not vim.tbl_isempty(task) and task.uuid ~= nil and task.uuid ~= ''
-end
 -- TODO check and debug this function
 -- Main function to process the current line and build task hierarchy
 function M.process_task_hierarchy()
@@ -656,7 +547,7 @@ function M.process_task_hierarchy()
     local current_task = require'tasks.parser'.parse(current_line)
 
     -- Check if current line is a task
-    if not M.is_valid(current_task) then
+    if not is_valid(current_task) then
         vim.notify("Current line is not a task", vim.log.levels.WARN)
         return nil
     end
@@ -674,7 +565,7 @@ function M.process_task_hierarchy()
             local line = vim.api.nvim_buf_get_lines(0, i, i + 1, false)[1]
             local task = require'tasks.parser'.parse(line)
 
-            if M.is_valid(task) then
+            if is_valid(task) then
                 local task_indent = string.match(line, '^%s*') or ''
                 local task_indent_level = #task_indent
 
@@ -714,7 +605,7 @@ function M.process_task_hierarchy()
         parent = parent_task
     }
 end
-
+M.Task = Task
 _G.tasks = M
 
 return M

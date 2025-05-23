@@ -105,7 +105,8 @@ end
 function TaskWarrior.run_cmd(cmd, uuid, ...)
     local args = ... or ''
     cmd = TW.prefix .. "task " .. uuid .. " " .. cmd .. " " .. args
-    local out = require'util'.run(cmd)
+    print('run_cmd: cmd: ', cmd)
+    local out = require'tasks.util'.run(cmd)
     return out
 end
 
@@ -139,7 +140,12 @@ end
 --- @param json string
 --- @return table uuids
 function TaskWarrior.import(json)
-    local uuids =  require'tasks.util'.run(TW.prefix .. "echo '" .. json .. "' | task import ")
+    local cmd = TW.prefix .. "echo '" .. json .. "' | task import "
+    local uuids =  require'tasks.util'.run(cmd)
+    if uuids == nil or uuids == '' then
+        print('import: uuids is nil or empty')
+        return nil
+    end
     return TaskWarrior.get_uuids(uuids) -- uuids are strings
 end
 
@@ -161,7 +167,7 @@ end
 function TaskWarrior.set_task(task)
     local str_task = ''
     if type(task) == 'table' then
-        str_task = require'cjson'.encode(task.data)
+        str_task = require'cjson'.encode(task)
     else
         str_task = task
     end
@@ -194,7 +200,7 @@ end
 function TaskWarrior.update_task(task)
     local str_task = ''
     if type(task) == 'table' then
-        str_task = require'cjson'.encode(task.data)
+        str_task = require'cjson'.encode(task)
     else
         str_task = task
     end
@@ -209,19 +215,34 @@ end
 --- @param task table
 --- @return string
 function TaskWarrior.delete_task(task)
-    return TaskWarrior.run_cmd('delete', task.data.uuid)
+    cmd = TW.prefix .. "yes | task " .. task.uuid .. " delete"
+
+    vim.ui.input({prompt = 'delete task ' .. task.uuid .. '? (y|N) '},
+        function(input)
+            if input == nil then
+                print('delete_task: user cancelled')
+                return nil
+            end
+            if input == 'y' or input == 'yes' then
+                return require'tasks.util'.run(cmd)
+            else
+                print('delete_task: user cancelled')
+                return nil
+            end
+        end
+    )
 end
 
 --- @brief start a task
 --- @param task table
 function TaskWarrior.start_task(task)
-    return TaskWarrior.run_cmd('start', task.data.uuid)
+    return TaskWarrior.run_cmd('start', task.uuid)
 end
 
 --- @brief add a new task
 --- @param task table jsonified task
 function TaskWarrior.add_task(task)
-    json = require'cjson'.encode(task)
+    json = vim.json.encode(task)
     return TaskWarrior.import(json)
 end
 
@@ -230,14 +251,18 @@ end
 --- @brief stop a task
 --- @param task table
 function TaskWarrior.stop_task(task)
-    return TaskWarrior.run_cmd('stop', task.data.uuid)
+    return TaskWarrior.run_cmd('stop', task.uuid)
 end
 
 
 --- @brief mark a task as done
 --- @param task table
 function TaskWarrior.complete_task(task)
-    return TaskWarrior.run_cmd('done', task.data.uuid)
+    if task == nil or task.uuid == nil then
+        print('complete_task: task is nil or doesnt have uuid')
+        return nil
+    end
+    return TaskWarrior.run_cmd('done', task.uuid)
 end
 
 
@@ -246,7 +271,7 @@ end
 --- @param annotation string
 --- @return string
 function TaskWarrior.annotate_task(task, annotation)
-    return TaskWarrior.run_cmd('annotate', task.data.uuid,annotation)
+    return TaskWarrior.run_cmd('annotate', task.uuid,annotation)
 end
 
 
@@ -255,18 +280,8 @@ end
 --- @param annotation string
 --- @return string
 function TaskWarrior.denotate_task(task, annotation)
-    return TaskWarrior.run_cmd('denotate', task.data.uuid, annotation)
+    return TaskWarrior.run_cmd('denotate', task.uuid, annotation)
 end
-
-
-
---- @brief sync the taskwarrior database with the server
---- @param tasks table
---- @return string
-function TaskWarrior.sync(tasks)
-    -- Syncs the backend database with the taskd server
-end
-
 
 --- @brief convert a datetime string to a localized datetime object
 --- @param value string

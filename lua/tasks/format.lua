@@ -25,11 +25,13 @@ end
 ---@param fields table
 ---@return string
 function M.tostring(task, fields)
+    local tbl = require'utils.tbl'
     if fields == nil then
         fields = {
             'description',
             'status',
             'due',
+            'end',
             'tags',
             'filename',
             'linenr',
@@ -44,7 +46,6 @@ function M.tostring(task, fields)
     end
 
     local status
-    print('task status; ' .. task.status)
     if task.status == 'pending' then
         status = ' '
     elseif task.status == 'working' then
@@ -58,6 +59,11 @@ function M.tostring(task, fields)
         due = string.format('[%s:: %s]', 'due', task.due)
     end
 
+    local end_date = ''
+    if task["end"] ~= nil then
+        end_date = string.format('[%s:: %s]', 'end', task["end"])
+    end
+
     local tags = ''
     if task.tags ~= nil and next(task.tags) ~= nil then
         tags = '#' .. table.concat(task.tags,' #')
@@ -68,7 +74,6 @@ function M.tostring(task, fields)
         file = '| ' .. task.filename .. ':' .. task.linenr
     end
 
-    local tbl = require'utils.tbl'
     local mtags = ''
     if task then
         for k,v in pairs(task) do
@@ -84,18 +89,10 @@ function M.tostring(task, fields)
     else
         uuid = string.format('@{%s}', uuid)
     end
-    local line = string.format('- [%s] %s %s %s %s %s %s', status, task.description, tags, due, mtags, file, uuid)
+    local line = string.format('- [%s] %s %s %s %s %s %s %s', status, task.description, tags, due, end_date, mtags, file, uuid)
 
     return line
 end
-
---- convert a metatag to a string
----@param mtag string
----@param val any
----@return string
--- function M.mtag_to_string(mtag,val)
---     return string.format('[%s:: %s]', mtag, val)
--- end
 
 -- these should on a formatter class
 function M.params_to_string(parameters)
