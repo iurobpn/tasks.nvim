@@ -256,7 +256,7 @@ function Task.done()
 end
 --- indexing current workspace   -------------------
 function Task.index()
-    local indexer = M.indexer
+    local indexer = require'tasks.indexer'
     local ws = M.ws[M.current_ws]
     if ws == nil then
         print('No workspace found')
