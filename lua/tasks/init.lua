@@ -123,6 +123,19 @@ local date_pattern = '[%dT :%-]+'
 M.ws['pkm'] = Workspace('pkm', os.getenv("HOME") .. '/git/my/home/pkm')
 -- M.query = require('tasks.' .. M.backend)
 
+M.get_filename = function()
+    local ws = M.ws[M.current_ws]
+    if ws == nil then
+        print('No workspace found')
+        return
+    end
+    if ws.folder == nil then
+        print('No folder found')
+        return
+    end
+    return ws:get_filename()
+end
+
 --- Toggle the plugin by calling the `enable`/`disable` methods respectively.
 function M.toggle()
     local main = require("tasks.main")
@@ -169,6 +182,7 @@ local function task2line(task)
 end
 
 local Task = {}
+
 function Task.update()
     local line = vim.api.nvim_get_current_line()
     local task = require'tasks.parser'.parse(line)
@@ -189,6 +203,7 @@ function Task.update()
 
     return old_task.uuid
 end
+
 function Task.parse()
     local line = vim.api.nvim_get_current_line()
     local task = require'tasks.parser'.parse(line)
