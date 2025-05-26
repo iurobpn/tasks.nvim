@@ -85,12 +85,9 @@ local TaskWarrior = {
 TW = TaskWarrior
 function TaskWarrior.mkdebug()
     if TW.debug then
-        TW.prefix = 'TASKRC=/home/user/.taskrc; '
-    end
-end
-function TaskWarrior.rmdebug()
-    if TW.debug then
-        TW.prefix = 'TASKRC=/home/user/.taskrc; '
+        TW.prefix = 'TASKDATA=/tmp/.task/'
+    else
+        TW.prefix = ''
     end
 end
 if TaskWarrior.debug then

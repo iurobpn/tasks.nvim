@@ -359,9 +359,11 @@ end
 
 function Task.debug()
     TaskWarrior.debug = true
+    TaskWarrior.mkdebug()
 end
 function Task.nodebug()
     TaskWarrior.debug = false
+    TaskWarrior.mkdebug()
 end
 
 -- make recurrent tasks done and add completion date
