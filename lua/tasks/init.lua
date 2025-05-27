@@ -629,6 +629,7 @@ function M.process_task_hierarchy()
         parent = parent_task
     }
 end
+vim.api.nvim_set_keymap('n', '<CR>', '<cmd>lua require("tasks").recurrent_done()<CR>', { noremap = true, silent = true, desc = 'Toggle task status' })
 M.Task = Task
 _G.tasks = M
 
