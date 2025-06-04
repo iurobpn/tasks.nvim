@@ -1,4 +1,5 @@
 TaskWarrior = require'tasks.taskwarrior'
+require"tasks.syntax"
 local Workspace = require 'tasks.ws'
 
 local M = {

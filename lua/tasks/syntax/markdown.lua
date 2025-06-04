@@ -1,8 +1,13 @@
 local palette = vim.g.gruvbox_palette
 -- Define the highlight group
 vim.api.nvim_set_hl(0, 'TaskUUID', { fg = palette.bright_orange, bg = palette.dark1, bold = true })
+vim.api.nvim_set_hl(0, 'TaskMeta', { fg = palette.faded_orange, bg = palette.dark1, bold = false })
+vim.api.nvim_set_hl(0, 'TaskTag', { fg = palette.bright_purple, bold = false })
 
 -- Link the group to the pattern
-vim.cmd('syntax region TaskUUID matchgroup=xParen start=/@{/ end=/}/')
-print('TaskUUID syntax highlighting enabled')
+local M = {}
+function M.init_highlights()
+    vim.cmd("source " .. vim.fn.stdpath("data") .. "/ggn/tasks.nvim/lua/tasks/syntax/md.vim")
+end
 
+return M
