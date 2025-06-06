@@ -143,7 +143,12 @@ function TaskWarrior.import(json)
         print('import: uuids is nil or empty')
         return nil
     end
-    return TaskWarrior.get_uuids(uuids) -- uuids are strings
+    out = TaskWarrior.get_uuids(uuids) -- uuids are strings
+    if out == nil or #out == 0 then
+        print('import: out is nil or empty')
+        return nil
+    end
+    return out
 end
 
 -- @brief set or get the current context
@@ -240,6 +245,10 @@ end
 --- @param task table jsonified task
 function TaskWarrior.add_task(task)
     json = vim.json.encode(task)
+    if json == nil or json == '' then
+        print('add_task: json is nil or empty')
+        return nil
+    end
     return TaskWarrior.import(json)
 end
 

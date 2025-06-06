@@ -347,6 +347,10 @@ function Task.ls(filter)
     local filterObj = require'tasks.filter'()
     filterObj:add(filter)
     local raw_tasks = filterObj:get_tasks()
+    if raw_tasks == nil or raw_tasks == '' then
+        vim.notify('No tasks found')
+        return
+    end
     local tasks = require'cjson'.decode(raw_tasks)
     local str_tasks = {}
     if type(tasks[1]) == 'table' then
