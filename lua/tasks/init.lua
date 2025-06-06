@@ -320,7 +320,9 @@ function Task.add(raw_task)
         print('Error: ' .. out)
         return
     end
+    print('uuid: ' .. uuid)
     task = TaskWarrior.get_task(uuid)
+    print('task:', vim.inspect(task))
     -- M.tasks[task.uuid] = task
     -- append uuid at the end of the current line
     local current_line = vim.api.nvim_get_current_line()

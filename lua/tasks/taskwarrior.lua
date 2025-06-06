@@ -85,7 +85,7 @@ local TaskWarrior = {
 TW = TaskWarrior
 function TaskWarrior.mkdebug()
     if TW.debug then
-        TW.prefix = 'TASKDATA=/tmp/.task/ '
+        TW.prefix = 'export TASKDATA=/tmp/.task/ && '
     else
         TW.prefix = ''
     end
@@ -117,8 +117,10 @@ function TaskWarrior.get_task(uuid)
     end
 
     local cmd = TW.prefix .. "task " .. uuid .. " export"
+    print('get_task: cmd: ', cmd)
     local json = require'tasks.util'.run(cmd)
-    local data = require'cjson'.decode(json)
+    print('json from get_task: ', json)
+    local data = require'dkjson'.decode(json)
     if #data > 0 then
         data = data[1]
     end
@@ -137,7 +139,9 @@ end
 --- @param json string
 --- @return table uuids
 function TaskWarrior.import(json)
-    local cmd = TW.prefix .. "echo '" .. json .. "' | task import "
+    local prefix = ''
+    local cmd = prefix .. "echo '" .. json .. "' | task import "
+    print('import: cmd: ', cmd)
     local uuids =  require'tasks.util'.run(cmd)
     if uuids == nil or uuids == '' then
         print('import: uuids is nil or empty')
