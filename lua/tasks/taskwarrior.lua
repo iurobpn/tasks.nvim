@@ -85,7 +85,7 @@ local TaskWarrior = {
 TW = TaskWarrior
 function TaskWarrior.mkdebug()
     if TW.debug then
-        TW.prefix = 'TASKDATA=/tmp/.task/'
+        TW.prefix = 'TASKDATA=/tmp/.task/ '
     else
         TW.prefix = ''
     end
