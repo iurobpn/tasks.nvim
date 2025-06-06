@@ -95,7 +95,6 @@ function M.parse(task)
     for _, pattern in ipairs(M.patterns.param) do
         for param, value in task:gmatch(pattern) do
             task_t[param] = value
-            task_t.description = task_t.description:gsub('%s*' .. pattern .. '%s*', '')
         end
     end
 
