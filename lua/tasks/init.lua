@@ -72,7 +72,7 @@ local function show(content)
     local num_lines = #lines
     -- get current cursor position
     local cursor = vim.api.nvim_win_get_cursor(0)
-    local row = cursor[1] - num_lines - 1
+    local row = cursor[1] - num_lines 
     local col = cursor[2] + 5
     if row < 1 then
         row = 1
