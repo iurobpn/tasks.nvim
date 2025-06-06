@@ -139,8 +139,7 @@ end
 --- @param json string
 --- @return table uuids
 function TaskWarrior.import(json)
-    local prefix = ''
-    local cmd = prefix .. "echo '" .. json .. "' | task import "
+    local cmd = TW.prefix .. "echo '" .. json .. "' | task import "
     print('import: cmd: ', cmd)
     local uuids =  require'tasks.util'.run(cmd)
     if uuids == nil or uuids == '' then
