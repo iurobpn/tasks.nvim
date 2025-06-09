@@ -1023,17 +1023,6 @@ if not (vim == nil) then
         )
     end
 
-    if not (vim.api.nvim_set_keymap == nil) then
-        vim.api.nvim_set_keymap('n', '<F9>', ':Tasks toggle default<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>tw', ':Tasks toggle work<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>p', ':Tasks toggle personal<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>tc', ':Tasks current<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>tt', ':Tasks #today<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>tm', ':Tasks #main<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>ti', ':Tasks #important<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>tr', ':Tasks #res<CR>', { noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '<LocalLeader>tl', ':Tasks last<CR>', { noremap = true, silent = true })
-    end
 end
 function M.open_window_by_tag(tag)
     local tasks_qf = M.query_by_tag(tag)

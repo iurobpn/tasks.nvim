@@ -38,6 +38,10 @@ local M = {
 function M.get_param_value(line, param)
     -- Check if the line contains the parameter
     for _, pattern in ipairs(M.patterns.param) do
+        if type(pattern) == 'table' then
+            -- If the pattern is a table, use the get pattern
+            pattern = pattern.get
+        end
         for key, value in line:gmatch(pattern) do
             -- Extract the value of the parameter
             if key == param then
