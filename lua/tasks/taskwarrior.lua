@@ -102,7 +102,7 @@ end
 function TaskWarrior.run_cmd(cmd, uuid, ...)
     local args = ... or ''
     cmd = TW.prefix .. "task " .. uuid .. " " .. cmd .. " " .. args
-    print('run_cmd: cmd: ', cmd)
+    -- print('run_cmd: cmd: ', cmd)
     local out = require'tasks.util'.run(cmd)
     return out
 end
@@ -117,9 +117,9 @@ function TaskWarrior.get_task(uuid)
     end
 
     local cmd = TW.prefix .. "task " .. uuid .. " export"
-    print('get_task: cmd: ', cmd)
+    -- print('get_task: cmd: ', cmd)
     local json = require'tasks.util'.run(cmd)
-    print('json from get_task: ', json)
+    -- print('json from get_task: ', json)
     local data = require'dkjson'.decode(json)
     if #data > 0 then
         data = data[1]
@@ -140,7 +140,7 @@ end
 --- @return table uuids
 function TaskWarrior.import(json)
     local cmd = TW.prefix .. "echo '" .. json .. "' | task import "
-    print('import: cmd: ', cmd)
+    -- print('import: cmd: ', cmd)
     local uuids =  require'tasks.util'.run(cmd)
     if uuids == nil or uuids == '' then
         print('import: uuids is nil or empty')
