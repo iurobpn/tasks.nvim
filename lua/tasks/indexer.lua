@@ -103,7 +103,7 @@ function mod.index_thread()
     local thread = Thread(
         function()
             local Tasks = require'tasks'
-            require"class"
+            require"katu.utils.class"
             if Tasks == nil then
                 print('Tasks object is nil')
                 return

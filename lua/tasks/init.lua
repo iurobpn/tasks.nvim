@@ -462,7 +462,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
     end,
 })
 
-require"class"
+require"katu.utils.class"
 M = _G.class(M, { constructor = function(folder, filename)
     local obj = {}
     obj:set_workspace(folder, filename)

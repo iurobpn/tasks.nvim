@@ -1,4 +1,4 @@
-local class = require('class')
+local class = require('katu.utils.class')
 -- local json = require('dkjson')
 
 local M = {

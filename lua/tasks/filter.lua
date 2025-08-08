@@ -74,7 +74,7 @@ function Filter.get_context()
 end
 
 
-require'class'
+require'katu.utils.class'
 Filter = _G.class(Filter, { 
     constructor = function()
         return {

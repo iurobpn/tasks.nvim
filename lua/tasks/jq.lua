@@ -249,7 +249,7 @@ function Query.init()
     vim.g.proj.register('query_history', M.hist)
 end
 
-require"class"
+require"katu.utils.class"
 Query = _G.class(Query,{constructor = Query.new})
 
 -- create a keymap to open the query history

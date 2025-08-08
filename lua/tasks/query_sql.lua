@@ -1,4 +1,4 @@
-require('class')
+require('katu.utils.class')
 local M = {}
 
 local Query = {

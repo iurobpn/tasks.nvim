@@ -17,7 +17,7 @@ end
 function M.get_filename(self)
     return table.concat({self.folder, self.dbpath, self.file}, '/')
 end
-require'class'
+require'katu.utils.class'
 M = _G.class(M, {constructor = function(name, folder)
     obj = {}
     obj.folder = folder
