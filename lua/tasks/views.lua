@@ -269,7 +269,7 @@ end
 
 function M.parse_entry(entry_str)
     -- Assume an arbitrary entry in the format of 'file:line'
-    local task_splited = require"utils".split(entry_str, ':')
+    local task_splited = require"katu.utils".split(entry_str, ':')
     if task_splited == nil then
         error('task_splited is nil')
     end
@@ -320,7 +320,7 @@ function M.fzf_query(tasks, ...)
     local sink = opts.sink or function(selected)
         if selected then
             for _, task in ipairs(selected) do
-                local filename, line_nr = require"utils".get_file_line(task, ':')
+                local filename, line_nr = require"katu.utils".get_file_line(task, ':')
                 if filename and line_nr then
                     vim.cmd.edit(filename)
                     vim.fn.cursor(line_nr, 1)
@@ -546,7 +546,7 @@ function M.populate_buf_timeline(buf, tasks)
     local grp = grp_ontime
     for _, task in pairs(tasks) do
         if task.linenr == nil then
-            -- require"utils".pprint(task, 'Task (linenr is nil): ')
+            -- require"katu.utils".pprint(task, 'Task (linenr is nil): ')
             error('task.linenr is nil')
         end
         if task.due ~= nil and last_due ~= task.due then
@@ -567,7 +567,7 @@ function M.populate_buf_timeline(buf, tasks)
             local date = os.date('%A, %d de %B de %Y', date_tbl)
             date = tostring(date)
             date = date:sub(1, 1):upper() .. date:sub(2)
-            local is_late = require"utils".is_before(task.due)
+            local is_late = require"katu.utils".is_before(task.due)
 
             if is_late then
                 grp = grp_late
@@ -594,7 +594,7 @@ function M.populate_buf_timeline(buf, tasks)
             local tags = M.split_lines(table.concat(task.tags, ' '), ' ')
             require"list".extend(task_lines, tags)
         end
-        table.insert(task_lines, ' ' .. require"utils.fs".basename(task.filename) .. ':' .. task.linenr)
+        table.insert(task_lines, ' ' .. require"katu.utils.fs".basename(task.filename) .. ':' .. task.linenr)
 
         local glyphss = { glyphs.circle }
         for _ = 2, #task_lines do
@@ -645,10 +645,10 @@ function M.split_lines(str, prefix)
     if n_lines > 1 then
         for j = 1, n_lines do
             local line = str:sub((j - 1) * width + 1, j * width)
-            table.insert(lines, prefix .. require"utils".trim(line))
+            table.insert(lines, prefix .. require"katu.utils".trim(line))
         end
     else
-        lines = { prefix .. require"utils".trim(str) }
+        lines = { prefix .. require"katu.utils".trim(str) }
     end
     if lines[#lines] == ' ' then
         table.remove(lines, #lines)
@@ -881,7 +881,7 @@ M.search = function(...)
     if opts.default then
         local q = require"tasks.query".Query()
         tasks = q:select(M.default_query)
-        -- require"utils".pprint(tasks, 'tasks in search: ')
+        -- require"katu.utils".pprint(tasks, 'tasks in search: ')
         -- M.write_tasks(tasks, 'tasks_from_query.json')
     elseif opts.search == 'last search' then
         if M.tasks == nil then

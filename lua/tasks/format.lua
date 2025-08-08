@@ -6,7 +6,7 @@ local M = {}
 ---@return string
 function M.toshortstring(task)
     local mtags = ''
-    local utils = require'utils'
+    local utils = require'katu.utils'
     for k,v in pairs(task) do
         if not utils.contains(nonmtags,k) then
             mtags = mtags .. string.format('[%s:: %s]', k, v)
@@ -25,7 +25,7 @@ end
 ---@param fields table
 ---@return string
 function M.tostring(task, fields)
-    local tbl = require'utils.tbl'
+    local tbl = require'katu.utils.tbl'
     if fields == nil then
         fields = {
             'description',

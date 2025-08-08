@@ -55,7 +55,7 @@ function M.log_tasks(tasks,folder)
         print('stasks are empty')
         return
     end
-    folder = require'utils.fs'.get_path(folder)
+    folder = require'katu.utils.fs'.get_path(folder)
     local fname = folder .. '/tasks.log'
     print('log_tasks: Writing tasks to ' .. fname)
     local fd = io.open(fname, 'w')
@@ -220,7 +220,7 @@ end
 function Query:run(cmd)
     table.insert(Query.hist, cmd)
     local file = self:file()
-    local str_tasks = require"utils".get_command_output(cmd .. ' ' .. file)
+    local str_tasks = require"katu.utils".get_command_output(cmd .. ' ' .. file)
     return str_tasks
 end
 

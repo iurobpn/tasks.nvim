@@ -69,7 +69,7 @@ local function show(content)
     end
     local win = dev.nvim.ui.float.Window()
     win.content = content
-    lines = require'utils'.split(content,'\n')
+    lines = require'katu.utils'.split(content,'\n')
     local num_lines = #lines
     -- get current cursor position
     local cursor = vim.api.nvim_win_get_cursor(0)

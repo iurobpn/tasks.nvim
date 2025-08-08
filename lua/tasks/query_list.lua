@@ -68,7 +68,7 @@ function M.select()
         prompt = 'Select a query>',
         actions = {
             ["default"] = function(selected)
-                local sel = require"utils".split(selected[1], '│')
+                local sel = require"katu.utils".split(selected[1], '│')
                 local id = tonumber(sel[1])
                 local query = M.list[id]
                 if query == nil then

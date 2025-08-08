@@ -94,7 +94,7 @@ function Query:select(query)
         -- If this task_id is not already in the tasks table, initialize it
         if not tasks[task_id] then
             if rtask.filename == nil or rtask.id == nil or rtask.line_number == nil or rtask.status == nil then
-                require"utils".pprint(rtask)
+                require"katu.utils".pprint(rtask)
                 error('task id: ' .. task_id .. ' is not valid')
             end
 
@@ -116,7 +116,7 @@ function Query:select(query)
         end
 
         -- Add the tag if it exists and is not already added
-        if rtask.tag ~= nil and not require"utils".contains(tasks_per_id[task_id].tags,rtask.tag) then
+        if rtask.tag ~= nil and not require"katu.utils".contains(tasks_per_id[task_id].tags,rtask.tag) then
             table.insert(tasks_per_id[task_id].tags, rtask.tag)
         end
     end

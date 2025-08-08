@@ -30,7 +30,7 @@ function M:read_notes(folder)
         return
     end
 
-    raw_tasks  = require"utils".split(raw_tasks, '\n')
+    raw_tasks  = require"katu.utils".split(raw_tasks, '\n')
     if raw_tasks == nil then
         print('splitted tasks are nil')
         return
