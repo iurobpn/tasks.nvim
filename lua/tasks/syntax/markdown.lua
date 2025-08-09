@@ -1,4 +1,4 @@
-local palette = vim.g.gruvbox_palette
+local palette = require'katu'.color
 -- Define the highlight group
 vim.api.nvim_set_hl(0, 'TaskUUID', { fg = palette.bright_orange, bg = palette.dark1, bold = true })
 vim.api.nvim_set_hl(0, 'TaskMeta', { fg = palette.faded_orange, bg = palette.dark1, bold = false })
