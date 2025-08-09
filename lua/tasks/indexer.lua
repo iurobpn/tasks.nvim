@@ -126,7 +126,7 @@ function mod.index_thread()
     thread.running = false
 end
 
-require"class"
+require"katu.utils.class"
 M = _G.class(M, {constructor = function(folder, filename)
     local obj = {}
     if folder ~= nil then
