@@ -2,25 +2,7 @@ local M = {}
 
 
 -- Function to format the tasks into a string
-M.format = require"tasks.format".tostring
-function M.format_task2(task)
-    -- Create the file:line format
-    local task_line = string.format("%s:%d: - [ ] %s", task.file, task.line, task.description)
-
-    -- Add tags
-    if #task.tags > 0 then
-        task_line = task_line .. " " .. table.concat(task.tags, " ")
-    end
-
-    -- Add parameters (metatags)
-    if next(task.parameters) ~= nil then
-        for key, value in pairs(task.parameters) do
-            task_line = task_line .. string.format(" [%s:: %s]", key, value)
-        end
-    end
-
-    return task_line
-end
+M.format_task = require"tasks.format".tostring
 -- -- QUERIES
 -- SELECT t.id
 -- FROM task t
@@ -84,25 +66,6 @@ M.TaskList = {
         tags = { "#bugfix", "#urgent" },
     }
 }
-
-M.format = require"tasks.format".tostring
--- Function to format tasks for display
-function M.format_task3(task)
-    local task_line = string.format("%s:%d: %s", task.filename, task.line_number, task.description)
-
-    -- Add tags and parameters to the task description
-    if #task.tags > 0 then
-        task_line = task_line .. " " .. table.concat(task.tags, " ")
-    end
-
-    if next(task.parameters) ~= nil then
-        for key, value in pairs(task.parameters) do
-            task_line = task_line .. string.format(" [%s:: %s]", key, value)
-        end
-    end
-
-    return task_line
-end
 
 -- Function to prompt for refining the search
 function M.prompt_refine_search(selected_tasks)
