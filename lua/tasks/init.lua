@@ -177,12 +177,6 @@ function M:add_workspace(name, folder)
     self.ws[name] = Workspace(name, folder)
 end
 
-local function task2line(task)
-    local new_line = require'tasks.format'.tostring(task)
-
-    return new_line
-end
-
 local Task = {}
 
 function Task.update()
@@ -200,7 +194,7 @@ function Task.update()
         vim.notify('Task not found')
         return
     end
-    line = task2line(old_task)
+    line = require"tasks.format".tostring(old_task)
     vim.api.nvim_set_current_line(line)
 
     return old_task.uuid
@@ -240,7 +234,7 @@ function Task.export()
         end
     end
 
-    line = task2line(old_task)
+    line = require"tasks.format".tostring(old_task)
     vim.api.nvim_set_current_line(line)
 
     return old_task.uuid
@@ -492,15 +486,6 @@ vim.api.nvim_create_user_command('Task',
     }
 )
 
-
--- Define the autocommand to trigger on saving a markdown file
--- vim.api.nvim_create_autocmd("BufWritePost", {
---     pattern = "*.md",     -- Only apply to markdown files
---     callback = function()
---         vim.cmd("TasksIndex")  -- Execute the 'TasksIndex' command
---     end,
--- })
-
 -- Task command handler
 function M.cmd(args)
     local usage = "Usage: :Task <add|ls|context|delete|done|update|update_all|index|info|parse> [arguments]"
@@ -529,7 +514,7 @@ function M.select_tasks(tasks,action)
                 local uuid = raw_task:match("@{(.*)}")
                 if uuid then
                     task = TaskWarrior.get_task(uuid)
-                    local line = task2line(task)
+                    local line = require"tasks.format".tostring(task)
                     vim.api.nvim_put({line}, 'l', true, false)
                 else
                     print('No task found with uuid ' .. uuid)

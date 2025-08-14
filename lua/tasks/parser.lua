@@ -121,27 +121,6 @@ function M.parse(task)
             end
         end
     end
-    -- for _, pattern in ipairs(M.patterns.param) do
-    --     print('pattern: ' .. vim.inspect(pattern))
-    --     local sub_pattern, get_pattern
-    --     if type(pattern) == 'table' then
-    --         sub_pattern = pattern.sub
-    --         get_pattern = pattern.get
-    --     else
-    --         sub_pattern = pattern
-    --         get_pattern = pattern
-    --     end
-    --     for param, value in task:gmatch(get_pattern) do
-    --         task_t[param] = value
-    --         local desc = task_t.description:gsub('%s*' .. sub_pattern .. '%s*', '')
-    --         if desc ~= nil and desc ~= '' then
-    --             task_t.description = desc
-    --         else
-    --             vim.notify('No description found for task: ' .. vim.inspect(task), vim.log.levels.WARN)
-    --             break
-    --         end
-    --     end
-    -- end
 
     if task_t.description == nil then
         print('Task has no description ' .. task)

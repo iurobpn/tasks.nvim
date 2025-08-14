@@ -11,3 +11,4 @@ function M.init_highlights()
 end
 
 return M
+

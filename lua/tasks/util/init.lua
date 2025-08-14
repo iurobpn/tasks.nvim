@@ -33,14 +33,14 @@ end
 --- convert table to string
 --- @param tbl table
 --- @return string
-function json_encode(tbl)
+function M.json_encode(tbl)
     return require"dkjson".encode(tbl)
 end
 
 --- convert string json to lua table
 --- @param s string
 --- @return table
-function json_decode(s)
+function M.json_decode(s)
     return require"dkjson".decode(s)
 end
 
