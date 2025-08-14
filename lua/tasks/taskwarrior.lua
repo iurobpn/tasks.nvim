@@ -9,7 +9,7 @@
 -- @details
 -- - this module is used to interact with taskwarrior
 -- - it uses the task command line interface to run commands
--- - it uses the cjson library to encode/decode json data
+-- - it uses the dkjson library to encode/decode json data
 -- - it uses the util module to run commands and read files
 
     -- date = '%d%d%d%d%-[0-1]%d%-[0-3]%d%]',
@@ -120,7 +120,7 @@ function TaskWarrior.get_task(uuid)
     -- print('get_task: cmd: ', cmd)
     local json = require'tasks.util'.run(cmd)
     -- print('json from get_task: ', json)
-    local data = require'dkjson'.decode(json)
+    local data = require'tasks.util'.json_decode(json)
     if #data > 0 then
         data = data[1]
     end
@@ -172,7 +172,7 @@ end
 function TaskWarrior.set_task(task)
     local str_task = ''
     if type(task) == 'table' then
-        str_task = require'cjson'.encode(task)
+        str_task = require'tasks.util'.json_encode(task)
     else
         str_task = task
     end
@@ -205,7 +205,7 @@ end
 function TaskWarrior.update_task(task)
     local str_task = ''
     if type(task) == 'table' then
-        str_task = require'cjson'.encode(task)
+        str_task = require'tasks.util'.json_encode(task)
     else
         str_task = task
     end

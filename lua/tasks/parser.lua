@@ -160,7 +160,7 @@ function M.run()
     for line in io.lines() do
         -- Extract filename and line number
         local parsed_task = M.parse_task(line)
-        local json_output = require"cjson".encode(parsed_task, { indent = true, level = 4 })  -- Pretty print with 4 spaces
+        local json_output = require"tasks.util".json_encode(parsed_task, { indent = true, level = 4 })  -- Pretty print with 4 spaces
     end
 end
 

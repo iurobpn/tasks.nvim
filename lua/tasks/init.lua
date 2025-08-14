@@ -352,7 +352,7 @@ function Task.ls(filter)
         vim.notify('No tasks found')
         return
     end
-    local tasks = require'cjson'.decode(raw_tasks)
+    local tasks = require'tasks.util'.json_decode(raw_tasks)
     local str_tasks = {}
     if type(tasks[1]) == 'table' then
         for _, task in ipairs(tasks) do

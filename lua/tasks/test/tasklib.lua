@@ -7,7 +7,7 @@ local function test_filter()
     filter:add("+work +now")
     -- assert(filter:build() == "status:pending and relatorio mensal +work +now")
     local raw_tasks = filter:get_tasks()
-    local tasks = require'cjson'.decode(raw_tasks)
+    local tasks = require'tasks.util'.json_decode(raw_tasks)
     str_tasks = {}
     -- print("Number of tasks: " .. #tasks)
     for _, task in ipairs(tasks) do

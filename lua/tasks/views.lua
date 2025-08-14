@@ -859,7 +859,7 @@ M.load_tasks = function()
     end
     M.json_tasks = fd:read('*a')
 
-    M.tasks = require"cjson".decode(M.json_tasks)
+    M.tasks = require"tasks.util".json_decode(M.json_tasks)
 end
 M.write_tasks = function(tasks, filename)
     local json_file = require"tasks.query".Query.get_path('tasks') .. '/' .. filename
@@ -868,7 +868,7 @@ M.write_tasks = function(tasks, filename)
         print('Failed to open ' .. json_file)
         return
     end
-    fd:write(require"cjson".encode(tasks))
+    fd:write(require"tasks.util".json_encode(tasks))
     fd:close()
 end
 

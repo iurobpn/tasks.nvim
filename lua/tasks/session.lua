@@ -1,5 +1,4 @@
 local class = require('katu.utils.class')
--- local json = require('dkjson')
 
 local M = {
     id_counter = 0,

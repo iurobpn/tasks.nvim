@@ -1,13 +1,13 @@
--- jq/cjson backend to tasks
+-- jq/dkjson backend to tasks
 local M = {
     list = require('tasks.query_list'),
     hist = {},
 }
 
 function M.check_deps()
-    local res, _ = pcall(require,'cjson')
+    local res, _ = pcall(require,'dkjson')
     if not res then
-        print("cjson is not present, please install it")
+        print("dkjson is not present, please install it")
         return false
     end
     res, _ = pcall(io.popen,'command -v jq 2>&1 > /dev/null')

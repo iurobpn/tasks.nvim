@@ -112,7 +112,7 @@ function M.UpdateJqFloat()
             if lines == nil or lines == '' then
                 return
             end
-            local taskss = require"cjson".decode(lines)
+            local taskss = require"tasks.util".json_decode(lines)
             local tasks_str = {}
 
             if lines ~= nil then

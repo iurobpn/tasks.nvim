@@ -138,7 +138,7 @@ function Query:select(option)
     if str_tasks == '' or str_tasks == '[]' then
         tasks = {}
     else
-        tasks = require'cjson'.decode('{ "tasks": ' .. str_tasks .. ' }')
+        tasks = require'tasks.util'.json_decode('{ "tasks": ' .. str_tasks .. ' }')
         tasks = tasks.tasks
     end
     return tasks

@@ -34,7 +34,7 @@ end
 
 -- from string
 function Task:load(str)
-    local data = require'cjson'.decode(str)
+    local data = require'tasks.util'.json_decode(str)
     copy(data, self.data)
     self.dirty = 0
 end
