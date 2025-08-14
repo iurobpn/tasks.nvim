@@ -2,7 +2,8 @@ local M = {}
 
 
 -- Function to format the tasks into a string
-function M.format_task(task)
+M.format = require"tasks.format".tostring
+function M.format_task2(task)
     -- Create the file:line format
     local task_line = string.format("%s:%d: - [ ] %s", task.file, task.line, task.description)
 
@@ -31,7 +32,6 @@ end
 
 -- Function to feed tasks to fzf-lua grep-like search with markdown syntax highlighting
 function M.search_tasks(task_list, f_sink)
-    print("Searching tasks...")
     if not task_list or #task_list == 0 then
         vim.notify("No tasks found.")
         return
@@ -85,8 +85,9 @@ M.TaskList = {
     }
 }
 
+M.format = require"tasks.format".tostring
 -- Function to format tasks for display
-function M.format_task(task)
+function M.format_task3(task)
     local task_line = string.format("%s:%d: %s", task.filename, task.line_number, task.description)
 
     -- Add tags and parameters to the task description

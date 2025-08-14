@@ -56,22 +56,22 @@ function M.tostring(task, fields)
 
     local due = ''
     if task.due ~= nil then
-        due = string.format('[%s:: %s]', 'due', task.due)
+        due = string.format(' [%s:: %s]', 'due', task.due)
     end
 
     local end_date = ''
     if task["end"] ~= nil then
-        end_date = string.format('[%s:: %s]', 'end', task["end"])
+        end_date = string.format(' [%s:: %s]', 'end', task["end"])
     end
 
     local tags = ''
     if task.tags ~= nil and next(task.tags) ~= nil then
-        tags = '#' .. table.concat(task.tags,' #')
+        tags = ' #' .. table.concat(task.tags,' #')
     end
 
     local file = ''
     if task.filename ~= nil and task.linenr ~= nil then
-        file = '| ' .. task.filename .. ':' .. task.linenr
+        file = ' | ' .. task.filename .. ':' .. task.linenr
     end
 
     local mtags = ''
@@ -87,9 +87,10 @@ function M.tostring(task, fields)
     if uuid == nil then
         uuid = ''
     else
-        uuid = string.format('@{%s}', uuid)
+        uuid = string.format(' @{%s}', uuid)
     end
-    local line = string.format('- [%s] %s %s %s %s %s %s %s', status, task.description, tags, due, end_date, mtags, file, uuid)
+
+    local line = string.format('- [%s] %s%s%s%s%s%s%s', status, task.description, tags, due, end_date, mtags, uuid, file)
 
     return line
 end
