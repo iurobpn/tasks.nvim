@@ -2,7 +2,7 @@ local M = {
     filename = '',
     file = 'tasks.json',
     folder = '.tasks',
-    path = os.getenv('HOME') .. '/git/pkm',
+    path = os.getenv('HOME') .. '/pkm',
     backend = 'jq',
 }
 M.filename = M.path .. '/' .. M.folder .. '/' .. M.file
@@ -56,9 +56,16 @@ function M:get_fullpath()
     return self.path .. '/' .. self.folder .. '/' .. self.file
 end
 
+function M:ensure_path()
+    local path = self.path .. '/' .. self.folder
+    if not require"katu.utils.fs".file_exists(path) then
+        os.execute("mkdir -p " .. path)
+    end
+end
 
 -- write to filçe db
 function M:write(tasks)
+    self:ensure_path()
     require('tasks.' .. self.backend).write(tasks, _G.tasks:get_filename())
 end
 
@@ -103,7 +110,6 @@ function mod.index_thread()
     local thread = Thread(
         function()
             local Tasks = require'tasks'
-            require"katu.utils.class"
             if Tasks == nil then
                 print('Tasks object is nil')
                 return
